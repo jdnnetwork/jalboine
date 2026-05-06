@@ -51,7 +51,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                   ),
                 ),
                 const Spacer(),
-                const AudioToggleButton(),
+                const AudioToggleButton(audioAsset: 'assets/audio/guide.wav'),
                 const SizedBox(height: 18),
                 BigButton(
                   label: '다음',

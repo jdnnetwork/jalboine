@@ -99,7 +99,8 @@ class _MedConfirmScreenState extends ConsumerState<MedConfirmScreen> {
                   children: [
                     BackPill(onTap: () => context.go('/med/count')),
                     const Spacer(),
-                    const AudioToggleButton(),
+                    const AudioToggleButton(
+                        audioAsset: 'assets/audio/alarm_confirm.wav'),
                   ],
                 ),
                 const Spacer(),

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/design_tokens.dart';
+import '../services/audio_service.dart';
 import '../services/onboarding_settings_service.dart';
 
 /// 온보딩 화면 공통 - "음성 켜기/끄기" 토글.
+/// audioAsset이 주어지면 OFF→ON 전환 시 즉시 해당 wav 재생.
 class AudioToggleButton extends ConsumerWidget {
-  const AudioToggleButton({super.key});
+  final String? audioAsset;
+  const AudioToggleButton({super.key, this.audioAsset});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -17,10 +20,16 @@ class AudioToggleButton extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () {
+          onTap: () async {
             HapticFeedback.lightImpact();
             SystemSound.play(SystemSoundType.click);
-            OnboardingSettingsService.setAudioGuide(ref, !on);
+            final next = !on;
+            await OnboardingSettingsService.setAudioGuide(ref, next);
+            if (next && audioAsset != null) {
+              await AudioService.instance.play(audioAsset!);
+            } else if (!next) {
+              await AudioService.instance.stop();
+            }
           },
           child: Ink(
             decoration: BoxDecoration(

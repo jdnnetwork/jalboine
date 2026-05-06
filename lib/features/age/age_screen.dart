@@ -74,7 +74,7 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
                   children: [
                     BackPill(onTap: () => context.go('/')),
                     const Spacer(),
-                    const AudioToggleButton(),
+                    const AudioToggleButton(audioAsset: 'assets/audio/age.wav'),
                   ],
                 ),
                 const SizedBox(height: 16),

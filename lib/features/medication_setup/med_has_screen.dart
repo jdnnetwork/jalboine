@@ -66,7 +66,8 @@ class _MedHasScreenState extends ConsumerState<MedHasScreen> {
                   children: [
                     BackPill(onTap: () => context.go('/')),
                     const Spacer(),
-                    const AudioToggleButton(),
+                    const AudioToggleButton(
+                        audioAsset: 'assets/audio/medicine_q.wav'),
                   ],
                 ),
                 const Spacer(),

@@ -112,7 +112,11 @@ class _FontSizeScreenState extends ConsumerState<FontSizeScreen> {
                   ),
                 ),
                 const Spacer(),
-                const AudioToggleButton(),
+                AudioToggleButton(
+                  audioAsset: _isMax
+                      ? 'assets/audio/voice_ask.wav'
+                      : 'assets/audio/font_check.wav',
+                ),
                 const SizedBox(height: 18),
                 Row(
                   children: [

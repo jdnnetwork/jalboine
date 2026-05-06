@@ -12,6 +12,7 @@ import '../../widgets/progress_dots.dart';
 class QuestionScreen extends ConsumerStatefulWidget {
   final String question;
   final String subtitle;
+  final String audioAsset;
   final int step;
   final int total;
   final void Function(bool yes) onAnswer;
@@ -20,6 +21,7 @@ class QuestionScreen extends ConsumerStatefulWidget {
     super.key,
     required this.question,
     this.subtitle = '',
+    required this.audioAsset,
     required this.step,
     required this.total,
     required this.onAnswer,
@@ -113,7 +115,7 @@ class _QuestionScreenState extends ConsumerState<QuestionScreen>
                     ),
                   ),
                 ),
-                const AudioToggleButton(),
+                AudioToggleButton(audioAsset: widget.audioAsset),
                 const SizedBox(height: 14),
                 Row(
                   children: [

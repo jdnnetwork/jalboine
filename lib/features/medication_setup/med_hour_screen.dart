@@ -87,7 +87,8 @@ class _MedHourScreenState extends ConsumerState<MedHourScreen> {
                       ),
                     ),
                     const Spacer(),
-                    const AudioToggleButton(),
+                    const AudioToggleButton(
+                        audioAsset: 'assets/audio/what_hour.wav'),
                   ],
                 ),
                 const SizedBox(height: 20),

@@ -48,7 +48,8 @@ class _MedCountScreenState extends ConsumerState<MedCountScreen> {
                   children: [
                     BackPill(onTap: () => context.go('/med/has')),
                     const Spacer(),
-                    const AudioToggleButton(),
+                    const AudioToggleButton(
+                        audioAsset: 'assets/audio/how_many.wav'),
                   ],
                 ),
                 const SizedBox(height: 20),

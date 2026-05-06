@@ -94,6 +94,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     return QuestionScreen(
       question: q.text,
       subtitle: q.subtitle,
+      audioAsset: q.audio,
       step: _i,
       total: _questions.length,
       onAnswer: _answer,
