@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
+import '../../services/audio_service.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/back_pill.dart';
 import '../../widgets/big_button.dart';
@@ -20,6 +21,14 @@ class MedConfirmScreen extends ConsumerStatefulWidget {
 
 class _MedConfirmScreenState extends ConsumerState<MedConfirmScreen> {
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AudioService.instance.play('assets/audio/alarm_confirm.wav');
+    });
+  }
 
   String _slotLabel(int idx) {
     if (widget.count == 1) return '';
@@ -84,13 +93,14 @@ class _MedConfirmScreenState extends ConsumerState<MedConfirmScreen> {
                 Row(children: [BackPill(onTap: () => context.go('/med/count'))]),
                 const Spacer(),
                 const Text(
-                  '이 시간에 알려드릴까요?',
+                  '이 시간에 큰 알림으로\n알려드릴까요?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
                     color: JD.ink,
                     letterSpacing: -1.0,
+                    height: 1.25,
                   ),
                 ),
                 const SizedBox(height: 20),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
+import '../../services/audio_service.dart';
 import '../../widgets/big_button.dart';
 
 /// 글자 크기 설정 화면 (1차/2차/3차).
@@ -20,6 +21,14 @@ class FontSizeScreen extends ConsumerStatefulWidget {
 
 class _FontSizeScreenState extends ConsumerState<FontSizeScreen> {
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AudioService.instance.play('assets/audio/font_check.wav');
+    });
+  }
 
   double get _fontSize => switch (widget.level) {
         1 => 32,

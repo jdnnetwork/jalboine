@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
+import '../../services/audio_service.dart';
 import '../../widgets/back_pill.dart';
 
 /// 화면 7-3: 약 복용 시간 선택. count(1/2/3)에 따라 반복.
@@ -17,6 +18,14 @@ class MedHourScreen extends ConsumerStatefulWidget {
 class _MedHourScreenState extends ConsumerState<MedHourScreen> {
   final List<int> _hours = [];
   static const _options = [6, 7, 8, 9, 10, 11, 12];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AudioService.instance.play('assets/audio/what_hour.wav');
+    });
+  }
 
   String get _slotTitle {
     if (widget.count == 1) return '몇 시에 약을 드시나요?';

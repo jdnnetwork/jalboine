@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
+import '../../services/audio_service.dart';
 import '../../widgets/back_pill.dart';
 import '../../widgets/elder_card.dart';
 
@@ -14,6 +15,14 @@ class MedCountScreen extends StatefulWidget {
 }
 
 class _MedCountScreenState extends State<MedCountScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AudioService.instance.play('assets/audio/how_many.wav');
+    });
+  }
+
   static const _options = <(int, String, Color)>[
     (1, '1번', JD.cMint),
     (2, '2번', JD.cYellowBg),

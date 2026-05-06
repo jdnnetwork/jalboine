@@ -2,10 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
+import '../../services/audio_service.dart';
 import '../../widgets/big_button.dart';
 
-class SetupIntroScreen extends StatelessWidget {
+class SetupIntroScreen extends StatefulWidget {
   const SetupIntroScreen({super.key});
+
+  @override
+  State<SetupIntroScreen> createState() => _SetupIntroScreenState();
+}
+
+class _SetupIntroScreenState extends State<SetupIntroScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AudioService.instance.play('assets/audio/guide.wav');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

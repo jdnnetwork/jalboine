@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
+import '../../services/audio_service.dart';
 import '../../widgets/back_pill.dart';
 import '../../widgets/elder_card.dart';
 
@@ -17,6 +18,14 @@ class AgeScreen extends ConsumerStatefulWidget {
 class _AgeScreenState extends ConsumerState<AgeScreen> {
   bool _busy = false;
   String? _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AudioService.instance.play('assets/audio/age.wav');
+    });
+  }
 
   static const _groups = <(String, String, Color)>[
     ('60-64', '60 ~ 64세', JD.cMint),
