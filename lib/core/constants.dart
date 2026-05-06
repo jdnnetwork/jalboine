@@ -1,52 +1,67 @@
 import 'package:flutter/material.dart';
+import 'design_tokens.dart';
 
 class JConst {
   static const supabaseUrl = 'https://jubgobjvcrbagfuyohwv.supabase.co';
   static const supabaseAnonKey =
       'sb_publishable_xtCmqqKIvSuSxdJPjRDh-w_m_TLIotZ';
 
-  static const deepLinkScheme = 'https';
   static const deepLinkHost = 'jalboine.app';
 
   static const apps = <String, AppMeta>{
     'phone': AppMeta(
-      label: '전화',
+      label: '전화하기',
       audio: 'assets/audio/phone.wav',
-      bg: Color(0xFF2E7D5A),
-      fg: Colors.white,
-      gradient: Color(0xFFB7E4C7),
+      gradStart: Color(0xFF1F8A5B),
+      gradEnd: Color(0xFF34B074),
+      shadow: Color(0xFF1F8A5B),
+      iconBg: Color(0x38FFFFFF), // 0.22
+      iconColor: Colors.white,
+      textColor: Colors.white,
       icon: Icons.call_rounded,
     ),
     'kakao': AppMeta(
       label: '카카오톡',
       audio: 'assets/audio/kakao.wav',
-      bg: Color(0xFFFFE100),
-      fg: Color(0xFF181600),
-      gradient: Color(0xFFFFF59D),
+      gradStart: Color(0xFFFFD24A),
+      gradEnd: Color(0xFFF5B800),
+      shadow: Color(0xFFF5B800),
+      iconBg: Color(0x8CFFFFFF), // 0.55
+      iconColor: Color(0xFF5C4100),
+      textColor: JD.ink,
       icon: Icons.chat_bubble_rounded,
     ),
-    'youtube': AppMeta(
-      label: '동영상',
-      audio: 'assets/audio/youtube.wav',
-      bg: Color(0xFFD64545),
-      fg: Colors.white,
-      gradient: Color(0xFFFFCDD2),
-      icon: Icons.play_circle_fill_rounded,
-    ),
     'camera': AppMeta(
-      label: '카메라',
+      label: '사진찍기',
       audio: 'assets/audio/camera.wav',
-      bg: Color(0xFF2D2D2D),
-      fg: Colors.white,
-      gradient: Color(0xFFE0DFDC),
+      gradStart: Color(0xFF6B4FB8),
+      gradEnd: Color(0xFF8E72D9),
+      shadow: Color(0xFF6B4FB8),
+      iconBg: Color(0x38FFFFFF),
+      iconColor: Colors.white,
+      textColor: Colors.white,
       icon: Icons.photo_camera_rounded,
+    ),
+    'youtube': AppMeta(
+      label: '영상 보기',
+      audio: 'assets/audio/youtube.wav',
+      gradStart: Color(0xFFE5641F),
+      gradEnd: Color(0xFFFF8A45),
+      shadow: Color(0xFFE5641F),
+      iconBg: Color(0x38FFFFFF),
+      iconColor: Colors.white,
+      textColor: Colors.white,
+      icon: Icons.play_circle_fill_rounded,
     ),
     'album': AppMeta(
       label: '사진앨범',
       audio: 'assets/audio/album.wav',
-      bg: Color(0xFFB44C5A),
-      fg: Colors.white,
-      gradient: Color(0xFFF8BBD0),
+      gradStart: Color(0xFFC44569),
+      gradEnd: Color(0xFFE5638A),
+      shadow: Color(0xFFC44569),
+      iconBg: Color(0x38FFFFFF),
+      iconColor: Colors.white,
+      textColor: Colors.white,
       icon: Icons.photo_library_rounded,
     ),
   };
@@ -63,16 +78,28 @@ class JConst {
 class AppMeta {
   final String label;
   final String audio;
-  final Color bg;
-  final Color fg;
-  final Color gradient;
+  final Color gradStart;
+  final Color gradEnd;
+  final Color shadow;
+  final Color iconBg;
+  final Color iconColor;
+  final Color textColor;
   final IconData icon;
   const AppMeta({
     required this.label,
     required this.audio,
-    required this.bg,
-    required this.fg,
-    required this.gradient,
+    required this.gradStart,
+    required this.gradEnd,
+    required this.shadow,
+    required this.iconBg,
+    required this.iconColor,
+    required this.textColor,
     required this.icon,
   });
+
+  LinearGradient get gradient => LinearGradient(
+        begin: const Alignment(-0.6, -1),
+        end: const Alignment(0.6, 1),
+        colors: [gradStart, gradEnd],
+      );
 }

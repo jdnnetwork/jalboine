@@ -18,7 +18,11 @@
       "Bash(flutter pub *)",
       "Bash(flutter analyze *)",
       "Bash(flutter test *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(flutter build *)",
+      "Bash(awk 'length\\($0\\) < 2000 {print NR\": \"$0}' /c/Users/nsand/Desktop/p2/jalboine/design/desing.html)",
+      "Bash(node -e ' *)",
+      "Bash(node *)"
     ]
   }
 }

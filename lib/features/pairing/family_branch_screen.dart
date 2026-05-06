@@ -3,20 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants.dart';
+import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../services/audio_service.dart';
 import '../../services/deep_link_service.dart';
+import '../../widgets/big_button.dart';
 
-/// 가족 연결 분기:
-/// - 딥링크로 들어온 코드가 있으면 자동 연결 → 홈
-/// - 없으면 "가족과 연결할까요?" → 네: 6자리 코드 표시 / 아니요: 홈
 class FamilyBranchScreen extends ConsumerStatefulWidget {
   const FamilyBranchScreen({super.key});
 
   @override
-  ConsumerState<FamilyBranchScreen> createState() =>
-      _FamilyBranchScreenState();
+  ConsumerState<FamilyBranchScreen> createState() => _FamilyBranchScreenState();
 }
 
 class _FamilyBranchScreenState extends ConsumerState<FamilyBranchScreen> {
@@ -47,7 +45,6 @@ class _FamilyBranchScreenState extends ConsumerState<FamilyBranchScreen> {
     try {
       final sb = ref.read(supabaseProvider);
       final uid = sb.auth.currentUser!.id;
-      // 코드를 가진 pair_link을 본인 senior로 연결
       await sb.from('pair_links').update({
         'senior_user_id': uid,
         'status': 'accepted',
@@ -95,17 +92,12 @@ class _FamilyBranchScreenState extends ConsumerState<FamilyBranchScreen> {
         _generatedCode = code;
         _busy = false;
       });
-      _speakCode(code);
+      AudioService.instance.play(JConst.audioFamily);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
       setState(() => _busy = false);
     }
-  }
-
-  void _speakCode(String code) {
-    // 코드 자체를 읽어주는 음성 파일은 없으므로 family.mp3 안내음 재생
-    AudioService.instance.play(JConst.audioFamily);
   }
 
   Future<void> _skip() async {
@@ -138,50 +130,69 @@ class _AskView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       child: Column(
         children: [
-          const SizedBox(height: 24),
-          Text(
-            '가족과 연결하시겠어요?',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineLarge,
+          const Spacer(),
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: JD.cPinkBg,
+              borderRadius: BorderRadius.circular(36),
+              boxShadow: [
+                BoxShadow(
+                    color: JD.cPink.withValues(alpha: 0.20),
+                    offset: const Offset(0, 8),
+                    blurRadius: 24),
+              ],
+            ),
+            child: const Icon(Icons.favorite_rounded,
+                color: Colors.white, size: 60),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 28),
           const Text(
-            '연결하면 자녀가 도와줄 수 있어요',
+            '가족과 연결할까요?',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18),
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              color: JD.ink,
+              letterSpacing: -1.0,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            '연결하면 자녀가 도와드릴 수 있어요',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: JD.inkSoft,
+            ),
           ),
           const Spacer(),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D5A),
-              foregroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(110),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28)),
-              textStyle:
-                  const TextStyle(fontSize: 36, fontWeight: FontWeight.w900),
-            ),
-            onPressed: busy ? null : onYes,
-            child: const Text('네'),
+          BigButton(
+            label: '네',
+            icon: Icons.check_rounded,
+            background: JD.cMint,
+            foreground: JD.ink,
+            shadowBottomColor: const Color(0xFF3C965A),
+            onTap: busy ? null : onYes,
+            height: 96,
+            fontSize: 30,
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFC8102E),
-              foregroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(110),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28)),
-              textStyle:
-                  const TextStyle(fontSize: 36, fontWeight: FontWeight.w900),
-            ),
-            onPressed: busy ? null : onNo,
-            child: const Text('아니요'),
+          const SizedBox(height: 14),
+          BigButton(
+            label: '아니요',
+            background: Colors.white,
+            foreground: JD.ink,
+            shadowBottomColor: const Color(0xFFC8B89A),
+            border: Border.all(color: const Color(0xFFE8DDC9), width: 3),
+            onTap: busy ? null : onNo,
+            height: 96,
+            fontSize: 30,
           ),
-          const SizedBox(height: 16),
         ],
       ),
     );
@@ -196,51 +207,86 @@ class _CodeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       child: Column(
         children: [
           const SizedBox(height: 24),
-          Text(
+          const Text(
             '자녀분에게\n이 번호를 알려주세요',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineLarge,
+            style: TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w900,
+              color: JD.ink,
+              letterSpacing: -1.0,
+              height: 1.25,
+            ),
           ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(32),
+              gradient: const LinearGradient(
+                begin: Alignment(-1, -1),
+                end: Alignment(1, 1),
+                colors: [Color(0xFFFFE9C2), Color(0xFFFFD49A)],
+              ),
+              borderRadius: BorderRadius.circular(JD.rCardLg),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
+                    color: JD.cYellow.withValues(alpha: 0.25),
+                    offset: const Offset(0, 12),
+                    blurRadius: 30),
+              ],
+            ),
+            child: Column(
+              children: [
+                const Text(
+                  '연결 번호',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: JD.inkSoft,
+                    letterSpacing: 3,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  code,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 64,
+                    fontWeight: FontWeight.w900,
+                    color: JD.ink,
+                    letterSpacing: 8,
+                  ),
                 ),
               ],
             ),
-            child: Text(
-              code,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 80,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 12,
-                color: JTheme.seniorAccent,
-              ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            '자녀분이 카카오/구글로 로그인 후\n이 번호를 입력하면 연결됩니다',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: JD.inkSoft,
+              height: 1.5,
             ),
           ),
           const Spacer(),
-          ElevatedButton(
-            onPressed: onDone,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: JTheme.seniorAccent,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('다음'),
+          BigButton(
+            label: '다음',
+            icon: Icons.arrow_forward_rounded,
+            background: JD.cCoralDeep,
+            foreground: Colors.white,
+            shadowBottomColor: const Color(0xFFD9794D),
+            onTap: onDone,
+            height: 84,
+            fontSize: 26,
           ),
-          const SizedBox(height: 8),
         ],
       ),
     );

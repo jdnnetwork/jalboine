@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants.dart';
+import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../services/audio_service.dart';
 import '../../services/notification_service.dart';
+import '../../widgets/big_button.dart';
 
 class MedAlarmScreen extends ConsumerStatefulWidget {
   const MedAlarmScreen({super.key});
@@ -56,35 +58,72 @@ class _MedAlarmScreenState extends ConsumerState<MedAlarmScreen> {
       body: SeniorBackground(
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
             child: Column(
               children: [
                 const Spacer(),
-                Icon(Icons.medication_rounded,
-                    size: 96, color: JTheme.seniorAccent),
-                const SizedBox(height: 24),
-                Text(
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment(-1, -1),
+                      end: Alignment(1, 1),
+                      colors: [Color(0xFFFFC233), Color(0xFFE5A000)],
+                    ),
+                    borderRadius: BorderRadius.circular(44),
+                    boxShadow: [
+                      BoxShadow(
+                          color: JD.cYellow.withValues(alpha: 0.30),
+                          offset: const Offset(0, 14),
+                          blurRadius: 30),
+                    ],
+                  ),
+                  child: const Icon(Icons.medication_rounded,
+                      color: Colors.white, size: 80),
+                ),
+                const SizedBox(height: 32),
+                const Text(
                   '약 드실 시간이에요!',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.displayLarge,
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w900,
+                    color: JD.ink,
+                    letterSpacing: -1.2,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '약을 드시면 "먹었어요"를 눌러주세요',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: JD.inkSoft,
+                  ),
                 ),
                 const Spacer(),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D5A),
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: _busy ? null : () => _logAndExit('taken'),
-                  child: const Text('먹었어요'),
+                BigButton(
+                  label: '먹었어요',
+                  icon: Icons.check_circle_rounded,
+                  background: JD.cGreen,
+                  foreground: Colors.white,
+                  shadowBottomColor: const Color(0xFF0F5C36),
+                  onTap: _busy ? null : () => _logAndExit('taken'),
+                  height: 96,
+                  fontSize: 28,
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFD24A),
-                    foregroundColor: Colors.black,
-                  ),
-                  onPressed: _busy ? null : () => _logAndExit('delayed'),
-                  child: const Text('나중에'),
+                const SizedBox(height: 14),
+                BigButton(
+                  label: '나중에 (10분 뒤)',
+                  background: JD.cYellowBg,
+                  foreground: JD.ink,
+                  shadowBottomColor: const Color(0xFF9B6F00),
+                  onTap: _busy ? null : () => _logAndExit('delayed'),
+                  height: 84,
+                  fontSize: 22,
                 ),
               ],
             ),

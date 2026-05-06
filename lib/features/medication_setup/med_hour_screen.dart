@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants.dart';
+import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../services/audio_service.dart';
 import '../../services/notification_service.dart';
+import '../../widgets/back_pill.dart';
 
 class MedHourScreen extends ConsumerStatefulWidget {
   final int count;
@@ -18,8 +20,6 @@ class MedHourScreen extends ConsumerStatefulWidget {
 class _MedHourScreenState extends ConsumerState<MedHourScreen> {
   final List<int> _hours = [];
   bool _busy = false;
-
-  // 6시 ~ 12시
   static const _options = [6, 7, 8, 9, 10, 11, 12];
 
   @override
@@ -62,21 +62,53 @@ class _MedHourScreenState extends ConsumerState<MedHourScreen> {
       body: SeniorBackground(
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16),
-                Text(
-                  '${_hours.length + 1}번째 시간\n언제 드시나요?',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineLarge,
+                Row(
+                  children: [
+                    BackPill(onTap: () => context.go('/med/count')),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '${_hours.length + 1} / ${widget.count}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: JD.inkSoft,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    _hours.isEmpty
+                        ? '몇 시에\n드시나요?'
+                        : '다음 시간을\n골라주세요',
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      color: JD.ink,
+                      letterSpacing: -1.0,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Expanded(
                   child: GridView.count(
                     crossAxisCount: 3,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
                     children: [
                       for (final h in _options)
                         _HourTile(
@@ -104,25 +136,15 @@ class _HourTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(JD.rCard),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(JD.rCard),
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.white, Color(0xFFFFE0B2)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(JD.rCard),
+            boxShadow: JD.shadowCard,
           ),
           child: Center(
             child: Text(
@@ -130,7 +152,8 @@ class _HourTile extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.w900,
-                color: JTheme.seniorText,
+                color: JD.ink,
+                letterSpacing: -1.2,
               ),
             ),
           ),

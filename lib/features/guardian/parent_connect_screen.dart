@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 
-/// 보호자 → 부모님 연결 화면.
-/// 전화번호 입력 후 SMS 앱을 열어 설치 링크 + 연결 코드를 보냅니다.
 class ParentConnectScreen extends ConsumerStatefulWidget {
   const ParentConnectScreen({super.key});
 
@@ -38,15 +37,11 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
     try {
       final sb = ref.read(supabaseProvider);
       final uid = sb.auth.currentUser!.id;
-
-      // 본인 보호자로 등록
       await sb.from('profiles').upsert({
         'user_id': uid,
         'role': 'guardian',
         'parent_phone': phoneRaw,
       });
-
-      // 코드 생성/저장
       String code;
       final existing = await sb
           .from('pair_links')
@@ -68,8 +63,7 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
       setState(() => _code = code);
 
       final uri = Uri.parse('https://jalboine.app/connect?code=$code');
-      final body =
-          '잘보이네 앱 설치 후 자동 연결돼요. $uri (연결코드: $code)';
+      final body = '잘보이네 앱 설치 후 자동 연결돼요. $uri (연결코드: $code)';
       final smsUri = Uri(
         scheme: 'sms',
         path: phoneRaw,
@@ -84,113 +78,92 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
     }
   }
 
-  Future<void> _continue() async {
-    context.go('/guardian/dashboard');
-  }
-
   @override
   Widget build(BuildContext context) {
     return Theme(
       data: JTheme.guardian(),
       child: Scaffold(
+        backgroundColor: JD.gBg,
         body: GuardianBackground(
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_rounded),
-                        onPressed: () => context.go('/'),
-                      ),
-                      const Text(
-                        '부모님 연결',
-                        style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color: JTheme.guardianText),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                  _Back(onTap: () => context.go('/')),
+                  const SizedBox(height: 16),
                   const Text(
-                    '부모님 전화번호를 입력하면\n자동으로 설치 링크를 보내드려요',
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
+                    '부모님 연결',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: JD.gInk,
+                      letterSpacing: -0.6,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    '부모님 전화번호를 입력하면\n설치 링크와 연결 코드를 문자로 보내드려요',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: JD.gInkSoft,
+                      height: 1.5,
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  TextField(
-                    controller: _phone,
-                    keyboardType: TextInputType.phone,
-                    style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.w800),
-                    decoration: InputDecoration(
-                      labelText: '부모님 전화번호',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: JD.gCard,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: JD.shadowBlueCard,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: _busy ? null : _sendSms,
-                    icon: const Icon(Icons.sms_rounded),
-                    label: const Text('문자 보내기'),
-                  ),
-                  if (_code != null) ...[
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '연결 코드',
-                            style: TextStyle(
-                                fontSize: 14, color: Colors.black54),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _code!,
-                            style: const TextStyle(
-                              fontSize: 42,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 6,
-                              color: JTheme.guardianAccent,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextField(
+                          controller: _phone,
+                          keyboardType: TextInputType.phone,
+                          style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: JD.gInk),
+                          decoration: InputDecoration(
+                            labelText: '부모님 전화번호',
+                            filled: true,
+                            fillColor: JD.gBg,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            '부모님이 앱을 설치하고 링크를 누르면 자동 연결됩니다',
-                            style: TextStyle(fontSize: 13, color: Colors.black54),
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 14),
+                        ElevatedButton.icon(
+                          onPressed: _busy ? null : _sendSms,
+                          icon: const Icon(Icons.sms_rounded),
+                          label: const Text('문자 보내기'),
+                        ),
+                      ],
                     ),
+                  ),
+                  if (_code != null) ...[
+                    const SizedBox(height: 16),
+                    _CodeCard(code: _code!),
                   ],
                   const Spacer(),
                   OutlinedButton(
-                    onPressed: _continue,
+                    onPressed: () => context.go('/guardian/dashboard'),
                     style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
+                      minimumSize: const Size.fromHeight(52),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                          borderRadius: BorderRadius.circular(16)),
+                      side: const BorderSide(color: JD.gLine),
+                      foregroundColor: JD.gInk,
+                      textStyle: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                     child: const Text('대시보드로'),
                   ),
@@ -199,6 +172,87 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _Back extends StatelessWidget {
+  final VoidCallback onTap;
+  const _Back({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Ink(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: JD.shadowBlueCard,
+            ),
+            child: const Icon(Icons.arrow_back_rounded,
+                size: 22, color: JD.gInk),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CodeCard extends StatelessWidget {
+  final String code;
+  const _CodeCard({required this.code});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: JD.gBlueSoft,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+            color: JD.gBlue.withValues(alpha: 0.20), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '연결 코드',
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: JD.gInkMute,
+                letterSpacing: 1.5),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            code,
+            style: const TextStyle(
+              fontSize: 42,
+              fontWeight: FontWeight.w900,
+              color: JD.gBlue,
+              letterSpacing: 8,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '부모님이 앱을 설치하고 문자 링크를 누르면 자동 연결됩니다',
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: JD.gInkSoft,
+                height: 1.5),
+          ),
+        ],
       ),
     );
   }

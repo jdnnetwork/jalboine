@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants.dart';
+import '../../core/design_tokens.dart';
 
 class AppTile extends StatelessWidget {
   final String appKey;
@@ -10,12 +11,11 @@ class AppTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final meta = JConst.apps[appKey];
-    if (meta == null) return const SizedBox();
+    if (meta == null) return const SizedBox.shrink();
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(28),
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(JD.rCard),
         onTap: () {
           HapticFeedback.lightImpact();
           SystemSound.play(SystemSoundType.click);
@@ -23,41 +23,49 @@ class AppTile extends StatelessWidget {
         },
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.white, meta.gradient],
-            ),
+            gradient: meta.gradient,
+            borderRadius: BorderRadius.circular(JD.rCard),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                color: meta.shadow.withValues(alpha: 0.40),
+                offset: const Offset(0, 6),
+                blurRadius: 0,
+              ),
+              BoxShadow(
+                color: meta.shadow.withValues(alpha: 0.40),
+                offset: const Offset(0, 14),
+                blurRadius: 26,
               ),
             ],
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: meta.bg,
-                  borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 14, 10, 14),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 86,
+                  height: 86,
+                  decoration: BoxDecoration(
+                    color: meta.iconBg,
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                  child: Icon(meta.icon, color: meta.iconColor, size: 50),
                 ),
-                child: Icon(meta.icon, color: meta.fg, size: 40),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                meta.label,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF2A2118),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    meta.label,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: meta.textColor,
+                      letterSpacing: -0.6,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

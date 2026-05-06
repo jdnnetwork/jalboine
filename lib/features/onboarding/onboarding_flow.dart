@@ -9,16 +9,23 @@ class OnboardingQuestion {
   final String key;
   final String audio;
   final String text;
-  const OnboardingQuestion(this.key, this.audio, this.text);
+  final String subtitle;
+  const OnboardingQuestion(this.key, this.audio, this.text, this.subtitle);
 }
 
 const _questions = <OnboardingQuestion>[
-  OnboardingQuestion('phone', 'assets/audio/phone.wav', '전화를 자주 하시나요?'),
-  OnboardingQuestion('kakao', 'assets/audio/kakao.wav', '카카오톡을 사용하시나요?'),
-  OnboardingQuestion('youtube', 'assets/audio/youtube.wav', '동영상을 자주 보시나요?'),
-  OnboardingQuestion('camera', 'assets/audio/camera.wav', '사진을 자주 찍으시나요?'),
-  OnboardingQuestion('album', 'assets/audio/album.wav', '사진 앨범을 자주 보시나요?'),
-  OnboardingQuestion('medicine', JConst.audioMedicineQ, '약을 드시나요?'),
+  OnboardingQuestion('phone', 'assets/audio/phone.wav',
+      '전화를 자주 하시나요?', '바로 거는 버튼을 만들어드릴게요'),
+  OnboardingQuestion('kakao', 'assets/audio/kakao.wav',
+      '카카오톡을 사용하시나요?', '큰 화면으로 보여드릴게요'),
+  OnboardingQuestion('youtube', 'assets/audio/youtube.wav',
+      '동영상을 자주 보시나요?', '한 번에 켜드릴게요'),
+  OnboardingQuestion('camera', 'assets/audio/camera.wav',
+      '사진을 자주 찍으시나요?', '바로 찍기 버튼을 넣어드릴게요'),
+  OnboardingQuestion('album', 'assets/audio/album.wav',
+      '사진 앨범을 자주 보시나요?', '쉽게 열어드릴게요'),
+  OnboardingQuestion('medicine', JConst.audioMedicineQ,
+      '약을 드시나요?', '복용 시간을 알려드릴게요'),
 ];
 
 class OnboardingFlow extends ConsumerStatefulWidget {
@@ -75,6 +82,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     final q = _questions[_i];
     return QuestionScreen(
       question: q.text,
+      subtitle: q.subtitle,
       audioAsset: q.audio,
       step: _i,
       total: _questions.length,
