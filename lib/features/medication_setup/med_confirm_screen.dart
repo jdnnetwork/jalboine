@@ -67,6 +67,7 @@ class _MedConfirmScreenState extends ConsumerState<MedConfirmScreen> {
       await sb.from('medications').upsert({
         'user_id': uid,
         'frequency': widget.count,
+        'times_per_day': widget.count,
         'times': widget.times.map((t) => '$t:00').toList(),
         'alarm_enabled': alarmEnabled,
       });
