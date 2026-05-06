@@ -21,7 +21,7 @@ dependencies:
   android_intent_plus: ^5.0.0
   shared_preferences: ^2.2.0
   crypto: ^3.0.0
-  speech_to_text: ^6.6.0
+  speech_to_text: ^7.0.0
   battery_plus: ^6.0.0
   connectivity_plus: ^6.0.0
   app_links: ^6.0.0
