@@ -11,24 +11,18 @@ class LauncherService {
         case 'message':
           await launchUrl(Uri.parse('sms:'));
           break;
-        case 'kakao':
-          await const AndroidIntent(
-            action: 'action_main',
-            package: 'com.kakao.talk',
-          ).launch();
+        case 'kakaotalk':
+          await _launchPackageOrStore('com.kakao.talk');
           break;
         case 'youtube':
-          await const AndroidIntent(
-            action: 'action_main',
-            package: 'com.google.android.youtube',
-          ).launch();
+          await _launchPackageOrStore('com.google.android.youtube');
           break;
         case 'camera':
           await const AndroidIntent(
             action: 'android.media.action.IMAGE_CAPTURE',
           ).launch();
           break;
-        case 'album':
+        case 'gallery':
           await const AndroidIntent(
             action: 'android.intent.action.VIEW',
             type: 'image/*',
@@ -36,7 +30,18 @@ class LauncherService {
           break;
       }
     } catch (_) {
-      // 앱 미설치 등 실패 시 무시
+      // 실패 시 무시
+    }
+  }
+
+  static Future<void> _launchPackageOrStore(String pkg) async {
+    try {
+      await AndroidIntent(action: 'action_main', package: pkg).launch();
+    } catch (_) {
+      await launchUrl(
+        Uri.parse('https://play.google.com/store/apps/details?id=$pkg'),
+        mode: LaunchMode.externalApplication,
+      );
     }
   }
 

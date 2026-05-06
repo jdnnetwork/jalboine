@@ -27,9 +27,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _exitConfirm(BuildContext context) async {
-    final ok1 = await _ask(context, '원래 화면으로 가시겠어요?');
+    final ok1 = await _ask(context, '기본 홈 화면으로 돌아가시겠어요?');
     if (!ok1 || !context.mounted) return;
-    final ok2 = await _ask(context, '정말로 가시겠어요?');
+    final ok2 = await _ask(
+        context, '정말로 돌아가시겠어요?\n잘보이네 앱은 유지됩니다');
     if (!ok2 || !context.mounted) return;
     SystemNavigator.pop();
   }

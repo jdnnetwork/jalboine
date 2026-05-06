@@ -2,11 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants.dart';
 import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
-import '../../services/audio_service.dart';
 import '../../services/deep_link_service.dart';
 import '../../widgets/big_button.dart';
 
@@ -37,7 +35,6 @@ class _FamilyBranchScreenState extends ConsumerState<FamilyBranchScreen> {
       return;
     }
     setState(() => _resolved = true);
-    AudioService.instance.play(JConst.audioFamily);
   }
 
   Future<void> _autoPair(String code) async {
@@ -92,7 +89,6 @@ class _FamilyBranchScreenState extends ConsumerState<FamilyBranchScreen> {
         _generatedCode = code;
         _busy = false;
       });
-      AudioService.instance.play(JConst.audioFamily);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));

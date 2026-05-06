@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants.dart';
 import '../../core/design_tokens.dart';
-import '../../core/supabase.dart';
 import '../../core/theme.dart';
-import '../../services/audio_service.dart';
-import '../../services/notification_service.dart';
 import '../../widgets/back_pill.dart';
 
+/// 화면 7-3: 약 복용 시간 선택. count(1/2/3)에 따라 반복.
 class MedHourScreen extends ConsumerStatefulWidget {
   final int count;
   const MedHourScreen({super.key, required this.count});
@@ -19,40 +16,31 @@ class MedHourScreen extends ConsumerStatefulWidget {
 
 class _MedHourScreenState extends ConsumerState<MedHourScreen> {
   final List<int> _hours = [];
-  bool _busy = false;
   static const _options = [6, 7, 8, 9, 10, 11, 12];
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      AudioService.instance.play(JConst.audioMedicineHour);
-    });
+  String get _slotTitle {
+    if (widget.count == 1) return '몇 시에 약을 드시나요?';
+    final idx = _hours.length;
+    if (widget.count == 2) {
+      return idx == 0 ? '아침에 몇 시에 드시나요?' : '저녁에 몇 시에 드시나요?';
+    }
+    return switch (idx) {
+      0 => '아침에 몇 시에 드시나요?',
+      1 => '점심에 몇 시에 드시나요?',
+      _ => '저녁에 몇 시에 드시나요?',
+    };
   }
 
   Future<void> _pick(int h) async {
-    if (_busy) return;
     setState(() => _hours.add(h));
-    if (_hours.length < widget.count) return;
-    setState(() => _busy = true);
-    try {
-      final sb = ref.read(supabaseProvider);
-      final uid = sb.auth.currentUser!.id;
+    if (_hours.length >= widget.count) {
       final times = _hours
-          .map((h) => '${h.toString().padLeft(2, '0')}:00:00')
+          .map((h) => '${h.toString().padLeft(2, '0')}:00')
           .toList();
-      await sb.from('medications').upsert({
-        'user_id': uid,
-        'times': times,
-        'times_per_day': widget.count,
-      });
-      await NotificationService.instance.rescheduleMedications(times);
       if (!mounted) return;
-      context.go('/family');
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
-      setState(() => _busy = false);
+      context.go(
+        '/med/confirm?times=${times.join(",")}&count=${widget.count}',
+      );
     }
   }
 
@@ -91,15 +79,13 @@ class _MedHourScreenState extends ConsumerState<MedHourScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
-                    _hours.isEmpty
-                        ? '몇 시에\n드시나요?'
-                        : '다음 시간을\n골라주세요',
+                    _slotTitle,
                     style: const TextStyle(
-                      fontSize: 32,
+                      fontSize: 30,
                       fontWeight: FontWeight.w900,
                       color: JD.ink,
                       letterSpacing: -1.0,
-                      height: 1.2,
+                      height: 1.25,
                     ),
                   ),
                 ),
@@ -113,7 +99,7 @@ class _MedHourScreenState extends ConsumerState<MedHourScreen> {
                       for (final h in _options)
                         _HourTile(
                           h: h,
-                          onTap: _busy ? null : () => _pick(h),
+                          onTap: () => _pick(h),
                         ),
                     ],
                   ),

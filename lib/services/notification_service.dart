@@ -68,6 +68,8 @@ class NotificationService {
     }
   }
 
+  Future<void> cancelAll() => _plugin.cancelAll();
+
   Future<void> snooze10min() async {
     final when =
         tz.TZDateTime.now(tz.local).add(const Duration(minutes: 10));

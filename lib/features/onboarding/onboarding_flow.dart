@@ -1,31 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants.dart';
 import '../../core/supabase.dart';
 import 'question_screen.dart';
 
 class OnboardingQuestion {
   final String key;
-  final String audio;
   final String text;
   final String subtitle;
-  const OnboardingQuestion(this.key, this.audio, this.text, this.subtitle);
+  const OnboardingQuestion(this.key, this.text, this.subtitle);
 }
 
 const _questions = <OnboardingQuestion>[
-  OnboardingQuestion('phone', 'assets/audio/phone.wav',
-      '전화를 자주 하시나요?', '바로 거는 버튼을 만들어드릴게요'),
-  OnboardingQuestion('kakao', 'assets/audio/kakao.wav',
-      '카카오톡을 사용하시나요?', '큰 화면으로 보여드릴게요'),
-  OnboardingQuestion('youtube', 'assets/audio/youtube.wav',
-      '동영상을 자주 보시나요?', '한 번에 켜드릴게요'),
-  OnboardingQuestion('camera', 'assets/audio/camera.wav',
-      '사진을 자주 찍으시나요?', '바로 찍기 버튼을 넣어드릴게요'),
-  OnboardingQuestion('album', 'assets/audio/album.wav',
-      '사진 앨범을 자주 보시나요?', '쉽게 열어드릴게요'),
-  OnboardingQuestion('medicine', JConst.audioMedicineQ,
-      '약을 드시나요?', '복용 시간을 알려드릴게요'),
+  OnboardingQuestion('phone', '전화를 쉽게 하고 싶으신가요?', '바로 거는 버튼을 만들어드릴게요'),
+  OnboardingQuestion('message', '문자를 쉽게 보내고 싶으신가요?', '큰 글씨로 보여드릴게요'),
+  OnboardingQuestion('kakaotalk', '카카오톡을 쉽게 하고 싶으신가요?', '바로 켜드릴게요'),
+  OnboardingQuestion('youtube', '동영상을 보고 싶으신가요?', '한 번에 켜드릴게요'),
+  OnboardingQuestion('camera', '사진을 쉽게 찍고 싶으신가요?', '바로 찍기 버튼을 넣어드릴게요'),
+  OnboardingQuestion('gallery', '찍은 사진을 쉽게 보고 싶으신가요?', '쉽게 열어드릴게요'),
 ];
 
 class OnboardingFlow extends ConsumerStatefulWidget {
@@ -38,13 +30,10 @@ class OnboardingFlow extends ConsumerStatefulWidget {
 class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   int _i = 0;
   final List<String> _enabled = [];
-  bool _takesMedication = false;
 
   Future<void> _answer(bool yes) async {
     final q = _questions[_i];
-    if (q.key == 'medicine') {
-      _takesMedication = yes;
-    } else if (yes) {
+    if (yes) {
       _enabled.add(q.key);
     }
     if (_i < _questions.length - 1) {
@@ -52,11 +41,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     } else {
       await _persist();
       if (!mounted) return;
-      if (_takesMedication) {
-        context.go('/med/count');
-      } else {
-        context.go('/family');
-      }
+      context.go('/med/has');
     }
   }
 
@@ -67,8 +52,10 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
       await sb.from('senior_settings').upsert({
         'user_id': uid,
         'enabled_apps': _enabled,
-        'takes_medication': _takesMedication,
       });
+      await sb
+          .from('profiles')
+          .update({'selected_apps': _enabled}).eq('user_id', uid);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -83,7 +70,6 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     return QuestionScreen(
       question: q.text,
       subtitle: q.subtitle,
-      audioAsset: q.audio,
       step: _i,
       total: _questions.length,
       onAnswer: _answer,

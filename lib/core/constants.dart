@@ -10,41 +10,37 @@ class JConst {
 
   static const apps = <String, AppMeta>{
     'phone': AppMeta(
-      label: '전화하기',
-      audio: 'assets/audio/phone.wav',
+      label: '전화',
       gradStart: Color(0xFF1F8A5B),
       gradEnd: Color(0xFF34B074),
       shadow: Color(0xFF1F8A5B),
-      iconBg: Color(0x38FFFFFF), // 0.22
+      iconBg: Color(0x38FFFFFF),
       iconColor: Colors.white,
       textColor: Colors.white,
       icon: Icons.call_rounded,
     ),
-    'kakao': AppMeta(
+    'message': AppMeta(
+      label: '문자',
+      gradStart: Color(0xFF2F6BFF),
+      gradEnd: Color(0xFF4A86FF),
+      shadow: Color(0xFF2F6BFF),
+      iconBg: Color(0x38FFFFFF),
+      iconColor: Colors.white,
+      textColor: Colors.white,
+      icon: Icons.chat_rounded,
+    ),
+    'kakaotalk': AppMeta(
       label: '카카오톡',
-      audio: 'assets/audio/kakao.wav',
       gradStart: Color(0xFFFFD24A),
       gradEnd: Color(0xFFF5B800),
       shadow: Color(0xFFF5B800),
-      iconBg: Color(0x8CFFFFFF), // 0.55
+      iconBg: Color(0x8CFFFFFF),
       iconColor: Color(0xFF5C4100),
       textColor: JD.ink,
       icon: Icons.chat_bubble_rounded,
     ),
-    'camera': AppMeta(
-      label: '사진찍기',
-      audio: 'assets/audio/camera.wav',
-      gradStart: Color(0xFF6B4FB8),
-      gradEnd: Color(0xFF8E72D9),
-      shadow: Color(0xFF6B4FB8),
-      iconBg: Color(0x38FFFFFF),
-      iconColor: Colors.white,
-      textColor: Colors.white,
-      icon: Icons.photo_camera_rounded,
-    ),
     'youtube': AppMeta(
-      label: '영상 보기',
-      audio: 'assets/audio/youtube.wav',
+      label: '동영상',
       gradStart: Color(0xFFE5641F),
       gradEnd: Color(0xFFFF8A45),
       shadow: Color(0xFFE5641F),
@@ -53,9 +49,18 @@ class JConst {
       textColor: Colors.white,
       icon: Icons.play_circle_fill_rounded,
     ),
-    'album': AppMeta(
+    'camera': AppMeta(
+      label: '사진찍기',
+      gradStart: Color(0xFF6B4FB8),
+      gradEnd: Color(0xFF8E72D9),
+      shadow: Color(0xFF6B4FB8),
+      iconBg: Color(0x38FFFFFF),
+      iconColor: Colors.white,
+      textColor: Colors.white,
+      icon: Icons.photo_camera_rounded,
+    ),
+    'gallery': AppMeta(
       label: '사진앨범',
-      audio: 'assets/audio/album.wav',
       gradStart: Color(0xFFC44569),
       gradEnd: Color(0xFFE5638A),
       shadow: Color(0xFFC44569),
@@ -65,19 +70,10 @@ class JConst {
       icon: Icons.photo_library_rounded,
     ),
   };
-
-  static const audioMedicineQ = 'assets/audio/medicine.wav';
-  static const audioMedicineCount = 'assets/audio/how many.wav';
-  static const audioMedicineHour = 'assets/audio/what hour.wav';
-  static const audioMedicineAlarm = 'assets/audio/medicine_alarm.wav';
-  static const audioAge = 'assets/audio/age.wav';
-  static const audioFamily = 'assets/audio/family.wav';
-  static const audioStart = 'assets/audio/start.wav';
 }
 
 class AppMeta {
   final String label;
-  final String audio;
   final Color gradStart;
   final Color gradEnd;
   final Color shadow;
@@ -87,7 +83,6 @@ class AppMeta {
   final IconData icon;
   const AppMeta({
     required this.label,
-    required this.audio,
     required this.gradStart,
     required this.gradEnd,
     required this.shadow,

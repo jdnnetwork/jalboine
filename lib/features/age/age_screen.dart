@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants.dart';
 import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
-import '../../services/audio_service.dart';
 import '../../widgets/back_pill.dart';
 import '../../widgets/elder_card.dart';
 
@@ -21,20 +19,12 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
   String? _selected;
 
   static const _groups = <(String, String, Color)>[
-    ('60_64', '60대 초반', JD.cMint),
-    ('65_69', '60대 후반', JD.cYellowBg),
-    ('70_74', '70대 초반', JD.cLavender),
-    ('75_79', '70대 후반', JD.cPinkBg),
-    ('80_plus', '80세 이상', JD.cCoral),
+    ('60-64', '60 ~ 64세', JD.cMint),
+    ('65-69', '65 ~ 69세', JD.cYellowBg),
+    ('70-74', '70 ~ 74세', JD.cLavender),
+    ('75-79', '75 ~ 79세', JD.cPinkBg),
+    ('80+', '80세 이상', JD.cCoral),
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      AudioService.instance.play(JConst.audioAge);
-    });
-  }
 
   Future<void> _pick(String group) async {
     if (_busy) return;
@@ -49,7 +39,7 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
       if (!mounted) return;
       await Future<void>.delayed(const Duration(milliseconds: 200));
       if (!mounted) return;
-      context.go('/onboarding');
+      context.go('/setup-intro');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
@@ -72,25 +62,13 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
-                    '연세가 어떻게 되세요?',
+                    '연세가 어떻게 되시나요?',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
                       color: JD.ink,
                       letterSpacing: -1.0,
                       height: 1.2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    '글자 크기를 맞춰드릴게요',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: JD.inkSoft,
                     ),
                   ),
                 ),

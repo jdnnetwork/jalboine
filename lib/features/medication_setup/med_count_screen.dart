@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants.dart';
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
-import '../../services/audio_service.dart';
 import '../../widgets/back_pill.dart';
 import '../../widgets/elder_card.dart';
 
+/// 화면 7-2: 약 복용 횟수.
 class MedCountScreen extends StatefulWidget {
   const MedCountScreen({super.key});
 
@@ -15,18 +14,10 @@ class MedCountScreen extends StatefulWidget {
 }
 
 class _MedCountScreenState extends State<MedCountScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      AudioService.instance.play(JConst.audioMedicineCount);
-    });
-  }
-
   static const _options = <(int, String, Color)>[
-    (1, '하루 한 번', JD.cMint),
-    (2, '하루 두 번', JD.cYellowBg),
-    (3, '하루 세 번', JD.cLavender),
+    (1, '1번', JD.cMint),
+    (2, '2번', JD.cYellowBg),
+    (3, '3번', JD.cLavender),
   ];
 
   @override
@@ -39,7 +30,7 @@ class _MedCountScreenState extends State<MedCountScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [BackPill(onTap: () => context.go('/onboarding'))]),
+                Row(children: [BackPill(onTap: () => context.go('/med/has'))]),
                 const SizedBox(height: 20),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 4),
@@ -51,18 +42,6 @@ class _MedCountScreenState extends State<MedCountScreen> {
                       color: JD.ink,
                       letterSpacing: -1.0,
                       height: 1.2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    '복용 시간을 알려드릴게요',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: JD.inkSoft,
                     ),
                   ),
                 ),
@@ -99,7 +78,7 @@ class _MedCountScreenState extends State<MedCountScreen> {
                                   child: Text(
                                     o.$2,
                                     style: const TextStyle(
-                                      fontSize: 24,
+                                      fontSize: 28,
                                       fontWeight: FontWeight.w800,
                                       color: JD.ink,
                                       letterSpacing: -0.4,

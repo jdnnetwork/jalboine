@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
-import '../../services/audio_service.dart';
-import '../../services/voice_recognition_service.dart';
 import '../../widgets/back_pill.dart';
 import '../../widgets/big_button.dart';
 import '../../widgets/progress_dots.dart';
@@ -12,7 +10,6 @@ import '../../widgets/progress_dots.dart';
 class QuestionScreen extends StatefulWidget {
   final String question;
   final String subtitle;
-  final String audioAsset;
   final int step;
   final int total;
   final void Function(bool yes) onAnswer;
@@ -21,7 +18,6 @@ class QuestionScreen extends StatefulWidget {
     super.key,
     required this.question,
     this.subtitle = '',
-    required this.audioAsset,
     required this.step,
     required this.total,
     required this.onAnswer,
@@ -33,7 +29,6 @@ class QuestionScreen extends StatefulWidget {
 
 class _QuestionScreenState extends State<QuestionScreen>
     with SingleTickerProviderStateMixin {
-  bool _listening = false;
   late final AnimationController _popCtrl;
 
   @override
@@ -43,46 +38,25 @@ class _QuestionScreenState extends State<QuestionScreen>
       vsync: this,
       duration: const Duration(milliseconds: 320),
     )..forward();
-    _start();
   }
 
   @override
   void didUpdateWidget(covariant QuestionScreen old) {
     super.didUpdateWidget(old);
-    if (old.audioAsset != widget.audioAsset) {
+    if (old.step != widget.step) {
       _popCtrl.forward(from: 0);
-      _start();
     }
   }
 
   @override
   void dispose() {
     _popCtrl.dispose();
-    VoiceRecognitionService.instance.stop();
     super.dispose();
   }
 
-  Future<void> _start() async {
-    await AudioService.instance.play(widget.audioAsset);
-    await Future<void>.delayed(const Duration(milliseconds: 1200));
-    if (!mounted) return;
-    final ok = await VoiceRecognitionService.instance.listenOnce((yes) {
-      if (!mounted || yes == null) return;
-      _setListening(false);
-      widget.onAnswer(yes);
-    });
-    _setListening(ok);
-  }
-
-  void _setListening(bool v) {
-    if (!mounted) return;
-    setState(() => _listening = v);
-  }
-
-  Future<void> _tap(bool yes) async {
+  void _tap(bool yes) {
     HapticFeedback.lightImpact();
     SystemSound.play(SystemSoundType.click);
-    await VoiceRecognitionService.instance.stop();
     widget.onAnswer(yes);
   }
 
@@ -132,7 +106,6 @@ class _QuestionScreenState extends State<QuestionScreen>
                           number: widget.step + 1,
                           question: widget.question,
                           subtitle: widget.subtitle,
-                          listening: _listening,
                         ),
                       ),
                     ),
@@ -187,12 +160,10 @@ class _QuestionCard extends StatelessWidget {
   final int number;
   final String question;
   final String subtitle;
-  final bool listening;
   const _QuestionCard({
     required this.number,
     required this.question,
     required this.subtitle,
-    required this.listening,
   });
 
   @override
@@ -259,24 +230,6 @@ class _QuestionCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: JD.inkSoft,
               ),
-            ),
-          ],
-          if (listening) ...[
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.mic_rounded, size: 20, color: JD.cPurple),
-                SizedBox(width: 6),
-                Text(
-                  '말씀하세요…',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: JD.cPurple,
-                  ),
-                ),
-              ],
             ),
           ],
         ],
