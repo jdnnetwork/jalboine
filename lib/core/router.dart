@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'supabase.dart';
 import '../features/start/start_screen.dart';
+import '../features/audio_guide/audio_guide_ask_screen.dart';
 import '../features/font_size/font_size_screen.dart';
 import '../features/age/age_screen.dart';
 import '../features/auth/guardian_login_screen.dart';
@@ -29,6 +30,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: GoRouterRefreshStream(sb.auth.onAuthStateChange),
     routes: [
       GoRoute(path: '/', builder: (_, _) => const StartScreen()),
+      GoRoute(
+          path: '/audio-guide-ask',
+          builder: (_, _) => const AudioGuideAskScreen()),
       GoRoute(
         path: '/font-size',
         builder: (_, s) => FontSizeScreen(

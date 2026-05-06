@@ -11,6 +11,7 @@ class JConst {
   static const apps = <String, AppMeta>{
     'phone': AppMeta(
       label: '전화',
+      audio: 'assets/audio/phone.wav',
       gradStart: Color(0xFF1F8A5B),
       gradEnd: Color(0xFF34B074),
       shadow: Color(0xFF1F8A5B),
@@ -21,6 +22,7 @@ class JConst {
     ),
     'message': AppMeta(
       label: '문자',
+      audio: 'assets/audio/message.wav',
       gradStart: Color(0xFF2F6BFF),
       gradEnd: Color(0xFF4A86FF),
       shadow: Color(0xFF2F6BFF),
@@ -31,6 +33,7 @@ class JConst {
     ),
     'kakaotalk': AppMeta(
       label: '카카오톡',
+      audio: 'assets/audio/kakao.wav',
       gradStart: Color(0xFFFFD24A),
       gradEnd: Color(0xFFF5B800),
       shadow: Color(0xFFF5B800),
@@ -41,6 +44,7 @@ class JConst {
     ),
     'youtube': AppMeta(
       label: '동영상',
+      audio: 'assets/audio/youtube.wav',
       gradStart: Color(0xFFE5641F),
       gradEnd: Color(0xFFFF8A45),
       shadow: Color(0xFFE5641F),
@@ -51,6 +55,7 @@ class JConst {
     ),
     'camera': AppMeta(
       label: '사진찍기',
+      audio: 'assets/audio/camera.wav',
       gradStart: Color(0xFF6B4FB8),
       gradEnd: Color(0xFF8E72D9),
       shadow: Color(0xFF6B4FB8),
@@ -61,6 +66,7 @@ class JConst {
     ),
     'gallery': AppMeta(
       label: '사진앨범',
+      audio: 'assets/audio/gallery.wav',
       gradStart: Color(0xFFC44569),
       gradEnd: Color(0xFFE5638A),
       shadow: Color(0xFFC44569),
@@ -74,6 +80,7 @@ class JConst {
 
 class AppMeta {
   final String label;
+  final String audio;
   final Color gradStart;
   final Color gradEnd;
   final Color shadow;
@@ -83,6 +90,7 @@ class AppMeta {
   final IconData icon;
   const AppMeta({
     required this.label,
+    required this.audio,
     required this.gradStart,
     required this.gradEnd,
     required this.shadow,

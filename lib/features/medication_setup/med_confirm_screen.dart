@@ -6,6 +6,8 @@ import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../services/audio_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/onboarding_settings_service.dart';
+import '../../widgets/audio_toggle_button.dart';
 import '../../widgets/back_pill.dart';
 import '../../widgets/big_button.dart';
 
@@ -26,7 +28,9 @@ class _MedConfirmScreenState extends ConsumerState<MedConfirmScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AudioService.instance.play('assets/audio/alarm_confirm.wav');
+      if (ref.read(audioGuideModeProvider)) {
+        AudioService.instance.play('assets/audio/alarm_confirm.wav');
+      }
     });
   }
 
@@ -90,7 +94,13 @@ class _MedConfirmScreenState extends ConsumerState<MedConfirmScreen> {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: Column(
               children: [
-                Row(children: [BackPill(onTap: () => context.go('/med/count'))]),
+                Row(
+                  children: [
+                    BackPill(onTap: () => context.go('/med/count')),
+                    const Spacer(),
+                    const AudioToggleButton(),
+                  ],
+                ),
                 const Spacer(),
                 const Text(
                   '이 시간에 큰 알림으로\n알려드릴까요?',

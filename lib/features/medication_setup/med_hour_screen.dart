@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
 import '../../services/audio_service.dart';
+import '../../services/onboarding_settings_service.dart';
+import '../../widgets/audio_toggle_button.dart';
 import '../../widgets/back_pill.dart';
 
 /// 화면 7-3: 약 복용 시간 선택. count(1/2/3)에 따라 반복.
@@ -23,7 +25,9 @@ class _MedHourScreenState extends ConsumerState<MedHourScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AudioService.instance.play('assets/audio/what_hour.wav');
+      if (ref.read(audioGuideModeProvider)) {
+        AudioService.instance.play('assets/audio/what_hour.wav');
+      }
     });
   }
 
@@ -82,6 +86,8 @@ class _MedHourScreenState extends ConsumerState<MedHourScreen> {
                         ),
                       ),
                     ),
+                    const Spacer(),
+                    const AudioToggleButton(),
                   ],
                 ),
                 const SizedBox(height: 20),

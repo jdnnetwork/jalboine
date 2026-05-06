@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/constants.dart';
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
+import '../../services/audio_service.dart';
 import '../../services/launcher_service.dart';
+import '../../services/onboarding_settings_service.dart';
 import '../../services/realtime_service.dart';
 import '../../services/sound_mode_service.dart';
 import '../../services/status_sync_service.dart';
@@ -18,12 +21,31 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  String? _primedKey;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       StatusSyncService.instance.pushOnce();
+      await OnboardingSettingsService.loadFromProfiles(ref);
     });
+  }
+
+  void _onCardTap(String key) {
+    final voiceMode = ref.read(voiceGuideModeProvider);
+    if (!voiceMode) {
+      LauncherService.launchApp(key);
+      return;
+    }
+    if (_primedKey == key) {
+      setState(() => _primedKey = null);
+      LauncherService.launchApp(key);
+    } else {
+      setState(() => _primedKey = key);
+      final meta = JConst.apps[key];
+      if (meta != null) AudioService.instance.play(meta.audio);
+    }
   }
 
   Future<void> _exitConfirm(BuildContext context) async {
@@ -33,6 +55,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         context, '정말로 돌아가시겠어요?\n잘보이네 앱은 유지됩니다');
     if (!ok2 || !context.mounted) return;
     SystemNavigator.pop();
+  }
+
+  void _showSoundToast(BuildContext context, String label) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(
+        duration: const Duration(milliseconds: 1200),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: JD.ink,
+        content: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+      ));
   }
 
   Future<bool> _ask(BuildContext context, String text) async {
@@ -154,6 +196,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               mode: mode,
                               onTap: () async {
                                 final next = mode.next;
+                                _showSoundToast(context, next.toastLabel);
+                                AudioService.instance.play(next.audioAsset);
                                 await persistSoundMode(ref, next);
                                 await SoundModeService.instance.apply(next);
                               },
@@ -195,8 +239,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     itemCount: apps.length,
                                     itemBuilder: (_, i) => AppTile(
                                       appKey: apps[i],
-                                      onTap: () =>
-                                          LauncherService.launchApp(apps[i]),
+                                      onTap: () => _onCardTap(apps[i]),
                                     ),
                                   ),
                                 ),

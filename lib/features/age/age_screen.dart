@@ -5,6 +5,8 @@ import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../services/audio_service.dart';
+import '../../services/onboarding_settings_service.dart';
+import '../../widgets/audio_toggle_button.dart';
 import '../../widgets/back_pill.dart';
 import '../../widgets/elder_card.dart';
 
@@ -23,7 +25,9 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AudioService.instance.play('assets/audio/age.wav');
+      if (ref.read(audioGuideModeProvider)) {
+        AudioService.instance.play('assets/audio/age.wav');
+      }
     });
   }
 
@@ -66,7 +70,13 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [BackPill(onTap: () => context.go('/'))]),
+                Row(
+                  children: [
+                    BackPill(onTap: () => context.go('/')),
+                    const Spacer(),
+                    const AudioToggleButton(),
+                  ],
+                ),
                 const SizedBox(height: 16),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 4),

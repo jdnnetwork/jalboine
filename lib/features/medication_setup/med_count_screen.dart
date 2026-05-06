@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
 import '../../services/audio_service.dart';
+import '../../services/onboarding_settings_service.dart';
+import '../../widgets/audio_toggle_button.dart';
 import '../../widgets/back_pill.dart';
 import '../../widgets/elder_card.dart';
 
 /// 화면 7-2: 약 복용 횟수.
-class MedCountScreen extends StatefulWidget {
+class MedCountScreen extends ConsumerStatefulWidget {
   const MedCountScreen({super.key});
 
   @override
-  State<MedCountScreen> createState() => _MedCountScreenState();
+  ConsumerState<MedCountScreen> createState() => _MedCountScreenState();
 }
 
-class _MedCountScreenState extends State<MedCountScreen> {
+class _MedCountScreenState extends ConsumerState<MedCountScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AudioService.instance.play('assets/audio/how_many.wav');
+      if (ref.read(audioGuideModeProvider)) {
+        AudioService.instance.play('assets/audio/how_many.wav');
+      }
     });
   }
 
@@ -39,7 +44,13 @@ class _MedCountScreenState extends State<MedCountScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [BackPill(onTap: () => context.go('/med/has'))]),
+                Row(
+                  children: [
+                    BackPill(onTap: () => context.go('/med/has')),
+                    const Spacer(),
+                    const AudioToggleButton(),
+                  ],
+                ),
                 const SizedBox(height: 20),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 4),

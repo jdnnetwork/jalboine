@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
 import '../../services/audio_service.dart';
+import '../../services/onboarding_settings_service.dart';
+import '../../widgets/audio_toggle_button.dart';
 import '../../widgets/big_button.dart';
 
-class SetupIntroScreen extends StatefulWidget {
+class SetupIntroScreen extends ConsumerStatefulWidget {
   const SetupIntroScreen({super.key});
 
   @override
-  State<SetupIntroScreen> createState() => _SetupIntroScreenState();
+  ConsumerState<SetupIntroScreen> createState() => _SetupIntroScreenState();
 }
 
-class _SetupIntroScreenState extends State<SetupIntroScreen> {
+class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AudioService.instance.play('assets/audio/guide.wav');
+      if (ref.read(audioGuideModeProvider)) {
+        AudioService.instance.play('assets/audio/guide.wav');
+      }
     });
   }
 
@@ -46,6 +51,8 @@ class _SetupIntroScreenState extends State<SetupIntroScreen> {
                   ),
                 ),
                 const Spacer(),
+                const AudioToggleButton(),
+                const SizedBox(height: 18),
                 BigButton(
                   label: '다음',
                   icon: Icons.arrow_forward_rounded,

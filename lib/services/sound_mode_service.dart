@@ -15,6 +15,16 @@ extension SoundModeX on SoundMode {
         SoundMode.vibrate => '진동',
         SoundMode.silent => '무음',
       };
+  String get audioAsset => switch (this) {
+        SoundMode.sound => 'assets/audio/sound_on.wav',
+        SoundMode.vibrate => 'assets/audio/vibrate.wav',
+        SoundMode.silent => 'assets/audio/sound_off.wav',
+      };
+  String get toastLabel => switch (this) {
+        SoundMode.sound => '소리 켜짐',
+        SoundMode.vibrate => '진동만',
+        SoundMode.silent => '소리 꺼짐',
+      };
   SoundMode get next => switch (this) {
         SoundMode.sound => SoundMode.vibrate,
         SoundMode.vibrate => SoundMode.silent,

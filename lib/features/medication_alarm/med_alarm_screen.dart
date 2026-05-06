@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
+import '../../services/audio_service.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/big_button.dart';
 
@@ -17,6 +18,14 @@ class MedAlarmScreen extends ConsumerStatefulWidget {
 
 class _MedAlarmScreenState extends ConsumerState<MedAlarmScreen> {
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AudioService.instance.play('assets/audio/medicine_alarm.wav');
+    });
+  }
 
   Future<void> _logAndExit(String status) async {
     if (_busy) return;

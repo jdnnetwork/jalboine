@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/supabase.dart';
 import '../../services/audio_service.dart';
+import '../../services/onboarding_settings_service.dart';
 import 'question_screen.dart';
 
 class OnboardingQuestion {
@@ -43,8 +44,14 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AudioService.instance.play(_questions[_i].audio);
+      _maybePlay();
     });
+  }
+
+  void _maybePlay() {
+    if (ref.read(audioGuideModeProvider)) {
+      AudioService.instance.play(_questions[_i].audio);
+    }
   }
 
   Future<void> _answer(bool yes) async {
@@ -54,7 +61,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     }
     if (_i < _questions.length - 1) {
       setState(() => _i++);
-      AudioService.instance.play(_questions[_i].audio);
+      _maybePlay();
     } else {
       await _persist();
       if (!mounted) return;

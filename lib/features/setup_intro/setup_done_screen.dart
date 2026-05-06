@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
 import '../../services/audio_service.dart';
+import '../../services/onboarding_settings_service.dart';
 import '../../widgets/big_button.dart';
 
-class SetupDoneScreen extends StatefulWidget {
+class SetupDoneScreen extends ConsumerStatefulWidget {
   const SetupDoneScreen({super.key});
 
   @override
-  State<SetupDoneScreen> createState() => _SetupDoneScreenState();
+  ConsumerState<SetupDoneScreen> createState() => _SetupDoneScreenState();
 }
 
-class _SetupDoneScreenState extends State<SetupDoneScreen> {
+class _SetupDoneScreenState extends ConsumerState<SetupDoneScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AudioService.instance.play('assets/audio/complete.wav');
+      if (ref.read(audioGuideModeProvider)) {
+        AudioService.instance.play('assets/audio/complete.wav');
+      }
     });
   }
 

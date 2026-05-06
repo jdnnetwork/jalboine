@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
+import '../../widgets/audio_toggle_button.dart';
 import '../../widgets/back_pill.dart';
 import '../../widgets/big_button.dart';
 import '../../widgets/progress_dots.dart';
 
-class QuestionScreen extends StatefulWidget {
+class QuestionScreen extends ConsumerStatefulWidget {
   final String question;
   final String subtitle;
   final int step;
@@ -24,10 +26,10 @@ class QuestionScreen extends StatefulWidget {
   });
 
   @override
-  State<QuestionScreen> createState() => _QuestionScreenState();
+  ConsumerState<QuestionScreen> createState() => _QuestionScreenState();
 }
 
-class _QuestionScreenState extends State<QuestionScreen>
+class _QuestionScreenState extends ConsumerState<QuestionScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _popCtrl;
 
@@ -111,6 +113,8 @@ class _QuestionScreenState extends State<QuestionScreen>
                     ),
                   ),
                 ),
+                const AudioToggleButton(),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(
@@ -144,7 +148,7 @@ class _QuestionScreenState extends State<QuestionScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
                 ProgressDots(total: widget.total, current: widget.step),
                 const SizedBox(height: 8),
               ],
