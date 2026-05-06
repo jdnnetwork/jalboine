@@ -1,122 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/router.dart';
+import 'core/supabase.dart';
+import 'core/theme.dart';
+import 'services/deep_link_service.dart';
+import 'services/notification_service.dart';
+import 'services/sound_mode_service.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initSupabase();
+  await NotificationService.instance.init();
+  await DeepLinkService.instance.init();
+  runApp(const ProviderScope(child: JalboineApp()));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class JalboineApp extends ConsumerStatefulWidget {
+  const JalboineApp({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  ConsumerState<JalboineApp> createState() => _JalboineAppState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+class _JalboineAppState extends ConsumerState<JalboineApp> {
+  @override
+  void initState() {
+    super.initState();
+    // 보호자 OAuth 콜백 또는 첫 로그인 직후 라우팅
+    Supabase.instance.client.auth.onAuthStateChange.listen((event) {
+      final user = event.session?.user;
+      if (user == null) return;
+      final ctx = ref.read(routerProvider).routerDelegate.navigatorKey.currentContext;
+      if (ctx == null) return;
+      // OAuth로 로그인했고 anonymous가 아니면 보호자 흐름으로
+      final isAnon = user.isAnonymous;
+      if (!isAnon) {
+        ref.read(routerProvider).go('/parent/connect');
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+    final router = ref.watch(routerProvider);
+    // soundMode를 senior_settings에서 받아 즉시 반영
+    ref.listen(seniorSettingsForBootstrap, (_, _) {});
+    return MaterialApp.router(
+      title: '잘보이네',
+      theme: JTheme.light(),
+      routerConfig: router,
+      debugShowCheckedModeBanner: false,
     );
   }
 }
+
+/// 부팅 시 senior_settings의 sound_mode를 한 번 읽어와 provider에 반영.
+final seniorSettingsForBootstrap = Provider<void>((ref) {
+  final sb = ref.watch(supabaseProvider);
+  final uid = sb.auth.currentUser?.id;
+  if (uid == null) return;
+  sb
+      .from('senior_settings')
+      .select('sound_mode')
+      .eq('user_id', uid)
+      .maybeSingle()
+      .then((row) {
+    if (row == null) return;
+    final m = parseSoundMode(row['sound_mode'] as String?);
+    ref.read(soundModeProvider.notifier).state = m;
+  }).catchError((_) {});
+});

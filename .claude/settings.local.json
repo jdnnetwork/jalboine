@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /s /b prompt.md)",
+      "Bash(dir C:\\\\Users\\\\nsand\\\\Desktop\\\\p2\\\\jalboine)",
+      "Bash(ls \"C:/Users/nsand/.claude/plugins\")",
+      "Bash(ls \"C:/Users/nsand/.claude/\")",
+      "Bash(ls \"C:/Users/nsand/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/commands\")",
+      "Bash(ls \"C:/Users/nsand/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills\")",
+      "Bash(ls \"C:/Users/nsand/Desktop/p2/jalboine/.claude\")",
+      "Bash(ls \"C:/Users/nsand/.claude/projects/C--Users-nsand-Desktop-p2-jalboine\")",
+      "Bash(where flutter *)",
+      "Bash(flutter --version)",
+      "Bash(cp medicine.wav start.wav)",
+      "Bash(cp medicine.wav age.wav)",
+      "Bash(cp message.wav family.wav)",
+      "Read(//c/c/Users/nsand/Desktop/p2/jalboine/assets/**)",
+      "Bash(flutter pub *)",
+      "Bash(flutter analyze *)",
+      "Bash(flutter test *)",
+      "Bash(git *)"
+    ]
+  }
+}
