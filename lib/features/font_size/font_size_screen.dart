@@ -57,6 +57,7 @@ class _FontSizeScreenState extends ConsumerState<FontSizeScreen> {
     setState(() => _busy = true);
     try {
       await _saveLevel();
+      await OnboardingSettingsService.setVoiceGuide(ref, false);
       if (!mounted) return;
       context.go('/age');
     } catch (e) {
