@@ -1,12 +1,12 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 
+/// 보호자가 피보호자가 생성한 4자리 연결 코드를 입력하는 화면.
 class ParentConnectScreen extends ConsumerStatefulWidget {
   const ParentConnectScreen({super.key});
 
@@ -16,63 +16,50 @@ class ParentConnectScreen extends ConsumerStatefulWidget {
 }
 
 class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
-  final _phone = TextEditingController();
+  final _code = TextEditingController();
   bool _busy = false;
-  String? _code;
 
-  String _gen() {
-    final r = Random.secure();
-    return List.generate(6, (_) => r.nextInt(10).toString()).join();
+  @override
+  void dispose() {
+    _code.dispose();
+    super.dispose();
   }
 
-  Future<void> _sendSms() async {
+  Future<void> _connect() async {
     if (_busy) return;
-    final phoneRaw = _phone.text.replaceAll(RegExp(r'\D'), '');
-    if (phoneRaw.length < 10) {
+    final code = _code.text.trim();
+    if (code.length != 4 || int.tryParse(code) == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('전화번호를 정확히 입력해주세요')));
+          const SnackBar(content: Text('4자리 숫자 코드를 입력해주세요')));
       return;
     }
     setState(() => _busy = true);
     try {
       final sb = ref.read(supabaseProvider);
       final uid = sb.auth.currentUser!.id;
-      await sb.from('profiles').upsert({
-        'user_id': uid,
-        'role': 'guardian',
-        'parent_phone': phoneRaw,
-      });
-      String code;
-      final existing = await sb
+      final row = await sb
           .from('pair_links')
-          .select('invite_code, status')
-          .eq('guardian_user_id', uid)
+          .select('id, senior_user_id')
+          .eq('invite_code', code)
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
-      if (existing != null && existing['invite_code'] != null) {
-        code = existing['invite_code'] as String;
-      } else {
-        code = _gen();
-        await sb.from('pair_links').insert({
-          'guardian_user_id': uid,
-          'status': 'pending',
-          'invite_code': code,
-        });
+      if (row == null || row['senior_user_id'] == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('일치하는 코드가 없어요')));
+        return;
       }
-      setState(() => _code = code);
-
-      final uri = Uri.parse('https://jalboine.app/connect?code=$code');
-      final body = '잘보이네 앱 설치 후 자동 연결돼요. $uri (연결코드: $code)';
-      final smsUri = Uri(
-        scheme: 'sms',
-        path: phoneRaw,
-        queryParameters: {'body': body},
-      );
-      await launchUrl(smsUri);
+      await sb.from('pair_links').update({
+        'guardian_user_id': uid,
+        'status': 'accepted',
+      }).eq('id', row['id'] as String);
+      if (!mounted) return;
+      context.go('/guardian/dashboard');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$e')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -83,92 +70,81 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
     return Theme(
       data: JTheme.guardian(),
       child: Scaffold(
-        backgroundColor: JD.gBg,
-        body: GuardianBackground(
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _Back(onTap: () => context.go('/')),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '부모님 연결',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      color: JD.gInk,
-                      letterSpacing: -0.6,
-                    ),
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Back(onTap: () => context.go('/guardian/dashboard')),
+                const SizedBox(height: 28),
+                const Text(
+                  '연결 코드 입력',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: JD.gInk,
+                    letterSpacing: -0.6,
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    '부모님 전화번호를 입력하면\n설치 링크와 연결 코드를 문자로 보내드려요',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: JD.gInkSoft,
-                      height: 1.5,
-                    ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '부모님 폰에 표시된 4자리 숫자를 입력해주세요',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: JD.gInkSoft,
+                    height: 1.5,
                   ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: JD.gCard,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: JD.shadowBlueCard,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        TextField(
-                          controller: _phone,
-                          keyboardType: TextInputType.phone,
-                          style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: JD.gInk),
-                          decoration: InputDecoration(
-                            labelText: '부모님 전화번호',
-                            filled: true,
-                            fillColor: JD.gBg,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        ElevatedButton.icon(
-                          onPressed: _busy ? null : _sendSms,
-                          icon: const Icon(Icons.sms_rounded),
-                          label: const Text('문자 보내기'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_code != null) ...[
-                    const SizedBox(height: 16),
-                    _CodeCard(code: _code!),
+                ),
+                const SizedBox(height: 32),
+                TextField(
+                  controller: _code,
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  textAlign: TextAlign.center,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
                   ],
-                  const Spacer(),
-                  OutlinedButton(
-                    onPressed: () => context.go('/guardian/dashboard'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(52),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      side: const BorderSide(color: JD.gLine),
-                      foregroundColor: JD.gInk,
-                      textStyle: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700),
-                    ),
-                    child: const Text('대시보드로'),
+                  style: const TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w900,
+                    color: JD.gBlue,
+                    letterSpacing: 12,
                   ),
-                ],
-              ),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    filled: true,
+                    fillColor: JD.gBg,
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 22),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide:
+                          const BorderSide(color: JD.gBlue, width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _busy ? null : _connect,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: JD.gBlue,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(56),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    textStyle: const TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w800),
+                  ),
+                  child: const Text('연결하기'),
+                ),
+              ],
             ),
           ),
         ),
@@ -180,79 +156,22 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
 class _Back extends StatelessWidget {
   final VoidCallback onTap;
   const _Back({required this.onTap});
-
   @override
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: JD.gBg,
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           onTap: onTap,
-          child: Ink(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: JD.shadowBlueCard,
-            ),
-            child: const Icon(Icons.arrow_back_rounded,
-                size: 22, color: JD.gInk),
+          child: const SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(Icons.arrow_back_rounded, size: 20, color: JD.gInk),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _CodeCard extends StatelessWidget {
-  final String code;
-  const _CodeCard({required this.code});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: JD.gBlueSoft,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-            color: JD.gBlue.withValues(alpha: 0.20), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '연결 코드',
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: JD.gInkMute,
-                letterSpacing: 1.5),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            code,
-            style: const TextStyle(
-              fontSize: 42,
-              fontWeight: FontWeight.w900,
-              color: JD.gBlue,
-              letterSpacing: 8,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '부모님이 앱을 설치하고 문자 링크를 누르면 자동 연결됩니다',
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: JD.gInkSoft,
-                height: 1.5),
-          ),
-        ],
       ),
     );
   }

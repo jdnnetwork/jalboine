@@ -111,30 +111,37 @@ class EmergencyScreen extends ConsumerWidget {
                         loading: () => const SizedBox.shrink(),
                         error: (_, _) => const SizedBox.shrink(),
                         data: (s) {
-                          if (s.emergencyContacts.isEmpty) {
-                            return _EmCard(
-                              contact: const _Contact(
-                                label: '보호자',
-                                sub: '아직 등록되지 않았어요',
-                                icon: Icons.favorite_rounded,
-                                gradStart: Color(0xFF6B7280),
-                                gradEnd: Color(0xFF9099AC),
-                                number: '',
+                          if (!s.hasGuardianContact) {
+                            return Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                borderRadius: BorderRadius.circular(JD.rCard),
+                                border: Border.all(
+                                    color: const Color(0xFFE8DDC9), width: 2),
                               ),
-                              onTap: () {},
+                              child: const Center(
+                                child: Text(
+                                  '가족 연결이 필요해요',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: JD.inkSoft,
+                                  ),
+                                ),
+                              ),
                             );
                           }
-                          final c = s.emergencyContacts.first;
                           return _EmCard(
                             contact: _Contact(
-                              label: c.name,
-                              sub: c.phone,
+                              label: s.guardianName!,
+                              sub: s.guardianPhone!,
                               icon: Icons.favorite_rounded,
                               gradStart: const Color(0xFF1F8A5B),
                               gradEnd: const Color(0xFF34B074),
-                              number: c.phone,
+                              number: s.guardianPhone!,
                             ),
-                            onTap: () => _dial(c.phone),
+                            onTap: () => _dial(s.guardianPhone!),
                           );
                         },
                       ),

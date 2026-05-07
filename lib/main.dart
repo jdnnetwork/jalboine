@@ -7,6 +7,7 @@ import 'core/theme.dart';
 import 'services/deep_link_service.dart';
 import 'services/notification_service.dart';
 import 'services/sound_mode_service.dart';
+import 'services/status_sync_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,16 +28,21 @@ class _JalboineAppState extends ConsumerState<JalboineApp> {
   @override
   void initState() {
     super.initState();
-    // 보호자 OAuth 콜백 또는 첫 로그인 직후 라우팅
+    // 피보호자(익명) 세션이 살아있으면 5분 주기 상태 동기화 시작
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null && user.isAnonymous) {
+      StatusSyncService.instance.startPeriodic();
+    }
     Supabase.instance.client.auth.onAuthStateChange.listen((event) {
-      final user = event.session?.user;
-      if (user == null) return;
-      final ctx = ref.read(routerProvider).routerDelegate.navigatorKey.currentContext;
-      if (ctx == null) return;
-      // OAuth로 로그인했고 anonymous가 아니면 보호자 흐름으로
-      final isAnon = user.isAnonymous;
-      if (!isAnon) {
-        ref.read(routerProvider).go('/parent/connect');
+      final u = event.session?.user;
+      if (u == null) {
+        StatusSyncService.instance.stop();
+        return;
+      }
+      if (u.isAnonymous) {
+        StatusSyncService.instance.startPeriodic();
+      } else {
+        StatusSyncService.instance.stop();
       }
     });
   }

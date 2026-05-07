@@ -11,6 +11,7 @@ import '../../services/onboarding_settings_service.dart';
 import '../../services/realtime_service.dart';
 import '../../services/sound_mode_service.dart';
 import '../../services/status_sync_service.dart';
+import '../pairing/family_connect_dialog.dart';
 import 'app_tile.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -274,7 +275,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Positioned(
                     bottom: 96,
                     right: 16,
-                    child: _ExitButton(onTap: () => _exitConfirm(context)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const FamilyConnectButton(),
+                        const SizedBox(width: 8),
+                        _ExitButton(onTap: () => _exitConfirm(context)),
+                      ],
+                    ),
                   ),
                 ],
               );

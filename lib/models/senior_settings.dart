@@ -21,6 +21,8 @@ class SeniorSettings {
   final String soundMode;
   final int? batteryPct;
   final bool online;
+  final String? guardianName;
+  final String? guardianPhone;
 
   const SeniorSettings({
     required this.userId,
@@ -31,6 +33,8 @@ class SeniorSettings {
     this.soundMode = 'sound',
     this.batteryPct,
     this.online = true,
+    this.guardianName,
+    this.guardianPhone,
   });
 
   factory SeniorSettings.fromJson(Map<String, dynamic> j) => SeniorSettings(
@@ -46,6 +50,8 @@ class SeniorSettings {
         soundMode: (j['sound_mode'] as String?) ?? 'sound',
         batteryPct: j['battery_pct'] as int?,
         online: (j['online'] as bool?) ?? true,
+        guardianName: j['guardian_name'] as String?,
+        guardianPhone: j['guardian_phone'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -58,7 +64,13 @@ class SeniorSettings {
         'sound_mode': soundMode,
         'battery_pct': batteryPct,
         'online': online,
+        'guardian_name': guardianName,
+        'guardian_phone': guardianPhone,
       };
+
+  bool get hasGuardianContact =>
+      (guardianName?.trim().isNotEmpty ?? false) &&
+      (guardianPhone?.trim().isNotEmpty ?? false);
 
   SeniorSettings copyWith({
     List<String>? enabledApps,
@@ -68,6 +80,8 @@ class SeniorSettings {
     String? soundMode,
     int? batteryPct,
     bool? online,
+    String? guardianName,
+    String? guardianPhone,
   }) =>
       SeniorSettings(
         userId: userId,
@@ -78,6 +92,8 @@ class SeniorSettings {
         soundMode: soundMode ?? this.soundMode,
         batteryPct: batteryPct ?? this.batteryPct,
         online: online ?? this.online,
+        guardianName: guardianName ?? this.guardianName,
+        guardianPhone: guardianPhone ?? this.guardianPhone,
       );
 
   static const empty = SeniorSettings(
