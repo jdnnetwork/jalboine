@@ -83,9 +83,22 @@
             <action android:name="android.intent.action.SENDTO"/>
             <data android:scheme="smsto"/>
         </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:mimeType="image/*"/>
+        </intent>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LAUNCHER"/>
+        </intent>
         <package android:name="com.kakao.talk"/>
         <package android:name="com.google.android.youtube"/>
         <package android:name="com.android.camera"/>
+        <package android:name="com.samsung.android.app.camera"/>
         <package android:name="com.google.android.apps.photos"/>
+        <package android:name="com.sec.android.gallery3d"/>
     </queries>
 </manifest>
