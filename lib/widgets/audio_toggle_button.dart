@@ -20,16 +20,17 @@ class AudioToggleButton extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () async {
+          onTap: () {
             HapticFeedback.lightImpact();
             SystemSound.play(SystemSoundType.click);
             final next = !on;
-            await OnboardingSettingsService.setAudioGuide(ref, next);
-            if (next && audioAsset != null) {
-              await AudioService.instance.play(audioAsset!);
-            } else if (!next) {
-              await AudioService.instance.stop();
+            ref.read(audioGuideModeProvider.notifier).state = next;
+            if (!next) {
+              AudioService.instance.stop();
+            } else if (audioAsset != null) {
+              AudioService.instance.play(audioAsset!);
             }
+            OnboardingSettingsService.setAudioGuide(ref, next);
           },
           child: Ink(
             decoration: BoxDecoration(
