@@ -227,20 +227,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               : Padding(
                                   padding: const EdgeInsets.fromLTRB(
                                       16, 4, 16, 8),
-                                  child: GridView.builder(
-                                    physics: const BouncingScrollPhysics(),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      mainAxisSpacing: 12,
-                                      crossAxisSpacing: 12,
-                                      childAspectRatio: 1,
-                                    ),
-                                    itemCount: apps.length,
-                                    itemBuilder: (_, i) => AppTile(
-                                      appKey: apps[i],
-                                      onTap: () => _onCardTap(apps[i]),
-                                    ),
+                                  child: LayoutBuilder(
+                                    builder: (context, c) {
+                                      const cross = 2;
+                                      const mainSpacing = 12.0;
+                                      const crossSpacing = 12.0;
+                                      final rows =
+                                          (apps.length / cross).ceil();
+                                      final tileW = (c.maxWidth -
+                                              (cross - 1) * crossSpacing) /
+                                          cross;
+                                      final tileH = (c.maxHeight -
+                                              (rows - 1) * mainSpacing) /
+                                          rows;
+                                      final ratio = tileH <= 0
+                                          ? 1.0
+                                          : tileW / tileH;
+                                      return GridView.builder(
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        gridDelegate:
+                                            SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: cross,
+                                          mainAxisSpacing: mainSpacing,
+                                          crossAxisSpacing: crossSpacing,
+                                          childAspectRatio: ratio,
+                                        ),
+                                        itemCount: apps.length,
+                                        itemBuilder: (_, i) => AppTile(
+                                          appKey: apps[i],
+                                          onTap: () => _onCardTap(apps[i]),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
                         ),
