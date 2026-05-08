@@ -10,8 +10,9 @@ import 'tabs/home_apps_tab.dart';
 import 'tabs/medications_tab.dart';
 import 'tabs/emergency_tab.dart';
 import 'tabs/info_tab.dart';
+import 'tabs/messages_tab.dart';
 
-enum GuardianTab { homeApps, medications, emergency, info }
+enum GuardianTab { homeApps, messages, medications, emergency, info }
 
 class GuardianDashboardScreen extends ConsumerStatefulWidget {
   const GuardianDashboardScreen({super.key});
@@ -157,6 +158,7 @@ class _DevPaired extends StatelessWidget {
           child: switch (tab) {
             GuardianTab.homeApps =>
               HomeAppsTab(seniorId: _dummySeniorId, s: _dummySettings),
+            GuardianTab.messages => const MessagesTab(seniorId: _dummySeniorId),
             GuardianTab.medications =>
               const MedicationsTab(seniorId: _dummySeniorId),
             GuardianTab.emergency =>
@@ -262,6 +264,7 @@ class _Paired extends ConsumerWidget {
           Expanded(
             child: switch (tab) {
               GuardianTab.homeApps => HomeAppsTab(seniorId: seniorId, s: s),
+              GuardianTab.messages => MessagesTab(seniorId: seniorId),
               GuardianTab.medications => MedicationsTab(seniorId: seniorId),
               GuardianTab.emergency => EmergencyTab(seniorId: seniorId, s: s),
               GuardianTab.info =>
@@ -391,9 +394,10 @@ class _BottomTabBar extends StatelessWidget {
   const _BottomTabBar({required this.active, required this.onChange});
 
   static const _items = <(GuardianTab, String, IconData)>[
-    (GuardianTab.homeApps, '홈 화면 관리', Icons.phone_android_rounded),
-    (GuardianTab.medications, '약 관리', Icons.medication_rounded),
-    (GuardianTab.emergency, '긴급 연락', Icons.emergency_rounded),
+    (GuardianTab.homeApps, '홈 화면', Icons.phone_android_rounded),
+    (GuardianTab.messages, '메시지', Icons.chat_bubble_rounded),
+    (GuardianTab.medications, '약', Icons.medication_rounded),
+    (GuardianTab.emergency, '긴급', Icons.emergency_rounded),
     (GuardianTab.info, '정보', Icons.info_outline_rounded),
   ];
 

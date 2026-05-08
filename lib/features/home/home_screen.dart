@@ -10,6 +10,7 @@ import '../../services/launcher_service.dart';
 import '../../services/onboarding_settings_service.dart';
 import '../../services/realtime_service.dart';
 import '../../services/foreground_sync_service.dart';
+import '../../services/messages_service.dart';
 import '../../services/sound_mode_service.dart';
 import '../../services/status_sync_service.dart';
 import '../pairing/family_connect_dialog.dart';
@@ -237,6 +238,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         child: _WeatherCard(timeStr: _timeStr),
                       ),
                       const SizedBox(height: 14),
+                      // 가족에게 카드 (가족 연결돼 있을 때만)
+                      Consumer(
+                        builder: (_, ref, _) {
+                          final partner = ref.watch(partnerIdProvider);
+                          final pid = partner.maybeWhen(
+                            data: (v) => v,
+                            orElse: () => null,
+                          );
+                          if (pid == null) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                            child: _FamilyMessageCard(
+                              onTap: () => context.push('/messages'),
+                            ),
+                          );
+                        },
+                      ),
                       // Apps grid (long press to enter guardian PIN)
                       Expanded(
                         child: GestureDetector(
@@ -492,6 +510,69 @@ class _SoundModeButton extends StatelessWidget {
             boxShadow: JD.shadowCard,
           ),
           child: Icon(_icon, color: JD.ink, size: 32),
+        ),
+      ),
+    );
+  }
+}
+
+class _FamilyMessageCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _FamilyMessageCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Ink(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment(-1, -1),
+              end: Alignment(1, 1),
+              colors: [Color(0xFFFFB7CE), Color(0xFFFF8FB1)],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFC44569).withValues(alpha: 0.25),
+                offset: const Offset(0, 8),
+                blurRadius: 18,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.28),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.favorite_rounded,
+                    color: Colors.white, size: 28),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Text(
+                  '가족에게',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.6,
+                  ),
+                ),
+              ),
+              const Icon(Icons.arrow_forward_rounded,
+                  color: Colors.white, size: 26),
+            ],
+          ),
         ),
       ),
     );
