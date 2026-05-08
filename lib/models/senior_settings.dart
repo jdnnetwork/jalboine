@@ -23,6 +23,12 @@ class SeniorSettings {
   final bool online;
   final String? guardianName;
   final String? guardianPhone;
+  final DateTime? updatedAt;
+  final bool unknownCallDetection;
+  final bool locationTracking;
+  final bool inactivityAlert;
+  final bool batteryAlert;
+  final bool emergencySound;
 
   const SeniorSettings({
     required this.userId,
@@ -35,6 +41,12 @@ class SeniorSettings {
     this.online = true,
     this.guardianName,
     this.guardianPhone,
+    this.updatedAt,
+    this.unknownCallDetection = false,
+    this.locationTracking = false,
+    this.inactivityAlert = false,
+    this.batteryAlert = false,
+    this.emergencySound = false,
   });
 
   factory SeniorSettings.fromJson(Map<String, dynamic> j) => SeniorSettings(
@@ -52,6 +64,15 @@ class SeniorSettings {
         online: (j['online'] as bool?) ?? true,
         guardianName: j['guardian_name'] as String?,
         guardianPhone: j['guardian_phone'] as String?,
+        updatedAt: j['updated_at'] == null
+            ? null
+            : DateTime.parse(j['updated_at'] as String).toLocal(),
+        unknownCallDetection:
+            (j['unknown_call_detection'] as bool?) ?? false,
+        locationTracking: (j['location_tracking'] as bool?) ?? false,
+        inactivityAlert: (j['inactivity_alert'] as bool?) ?? false,
+        batteryAlert: (j['battery_alert'] as bool?) ?? false,
+        emergencySound: (j['emergency_sound'] as bool?) ?? false,
       );
 
   Map<String, dynamic> toJson() => {
@@ -66,6 +87,11 @@ class SeniorSettings {
         'online': online,
         'guardian_name': guardianName,
         'guardian_phone': guardianPhone,
+        'unknown_call_detection': unknownCallDetection,
+        'location_tracking': locationTracking,
+        'inactivity_alert': inactivityAlert,
+        'battery_alert': batteryAlert,
+        'emergency_sound': emergencySound,
       };
 
   bool get hasGuardianContact =>
@@ -82,6 +108,12 @@ class SeniorSettings {
     bool? online,
     String? guardianName,
     String? guardianPhone,
+    DateTime? updatedAt,
+    bool? unknownCallDetection,
+    bool? locationTracking,
+    bool? inactivityAlert,
+    bool? batteryAlert,
+    bool? emergencySound,
   }) =>
       SeniorSettings(
         userId: userId,
@@ -94,6 +126,13 @@ class SeniorSettings {
         online: online ?? this.online,
         guardianName: guardianName ?? this.guardianName,
         guardianPhone: guardianPhone ?? this.guardianPhone,
+        updatedAt: updatedAt ?? this.updatedAt,
+        unknownCallDetection:
+            unknownCallDetection ?? this.unknownCallDetection,
+        locationTracking: locationTracking ?? this.locationTracking,
+        inactivityAlert: inactivityAlert ?? this.inactivityAlert,
+        batteryAlert: batteryAlert ?? this.batteryAlert,
+        emergencySound: emergencySound ?? this.emergencySound,
       );
 
   static const empty = SeniorSettings(

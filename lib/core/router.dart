@@ -23,6 +23,8 @@ import '../features/pairing/family_branch_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/emergency/emergency_screen.dart';
 import '../features/messages/senior_messages_screen.dart';
+import '../features/safety/call_permission_screen.dart';
+import '../features/safety/unknown_call_alert_screen.dart';
 import '../features/medication_alarm/med_alarm_screen.dart';
 import '../features/guardian_mode/guardian_pin_screen.dart';
 import '../features/guardian/parent_connect_screen.dart';
@@ -87,6 +89,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/messages',
           builder: (_, _) => const SeniorMessagesScreen()),
+      GoRoute(
+          path: '/safety/call-permission',
+          builder: (_, _) => const CallPermissionScreen()),
+      GoRoute(
+        path: '/safety/unknown-call',
+        builder: (_, s) {
+          final extra = (s.extra as Map?) ?? const {};
+          return UnknownCallAlertScreen(
+            phoneNumber: (extra['phone'] as String?) ?? '알 수 없음',
+            durationSec: extra['duration'] as int?,
+          );
+        },
+      ),
       GoRoute(path: '/alarm', builder: (_, _) => const MedAlarmScreen()),
       GoRoute(
           path: '/guardian/pin',

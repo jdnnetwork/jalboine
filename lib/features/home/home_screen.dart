@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,7 @@ import '../../services/foreground_sync_service.dart';
 import '../../services/messages_service.dart';
 import '../../services/sound_mode_service.dart';
 import '../../services/status_sync_service.dart';
+import '../../services/unknown_call_detector.dart';
 import '../pairing/family_connect_dialog.dart';
 import 'app_tile.dart';
 
@@ -26,6 +28,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   String? _primedKey;
+  Timer? _callCheckTimer;
+  bool _checkingCall = false;
+  bool _alertOpen = false;
 
   @override
   void initState() {
@@ -44,6 +49,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _callCheckTimer?.cancel();
     super.dispose();
   }
 
@@ -53,9 +59,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (state == AppLifecycleState.resumed) {
       StatusSyncService.instance.pushOnce();
       StatusSyncService.instance.startPeriodic();
+      _maybeStartCallChecker();
     } else if (state == AppLifecycleState.paused) {
       StatusSyncService.instance.stop();
+      _callCheckTimer?.cancel();
+      _callCheckTimer = null;
     }
+  }
+
+  /// senior_settings.unknown_call_detection==true 면 3분 주기 폴링.
+  void _maybeStartCallChecker() {
+    final s = ref.read(seniorSettingsProvider).value;
+    if (s == null || !s.unknownCallDetection) {
+      _callCheckTimer?.cancel();
+      _callCheckTimer = null;
+      return;
+    }
+    if (_callCheckTimer != null) return;
+    _callCheckTimer =
+        Timer.periodic(const Duration(minutes: 3), (_) => _checkUnknownCall());
+    _checkUnknownCall();
+  }
+
+  Future<void> _checkUnknownCall() async {
+    if (_checkingCall || _alertOpen) return;
+    _checkingCall = true;
+    try {
+      final hit = await UnknownCallDetector.instance.checkOnce();
+      if (hit == null || !mounted) return;
+      _alertOpen = true;
+      await context.push(
+        '/safety/unknown-call',
+        extra: {
+          'phone': hit.number,
+          'duration': hit.durationSec,
+        },
+      );
+      _alertOpen = false;
+    } finally {
+      _checkingCall = false;
+    }
+  }
+
+  /// 보호자가 토글을 ON 으로 바꾼 직후 권한 안내 화면 띄우기.
+  Future<void> _maybePromptCallPermission() async {
+    final has = await UnknownCallDetector.instance.hasPermissions();
+    if (has || !mounted) {
+      _maybeStartCallChecker();
+      return;
+    }
+    if (_alertOpen) return;
+    _alertOpen = true;
+    await context.push('/safety/call-permission');
+    _alertOpen = false;
+    _maybeStartCallChecker();
   }
 
   void _onCardTap(String key) {
@@ -174,6 +231,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget build(BuildContext context) {
     final settings = ref.watch(seniorSettingsProvider);
     final mode = ref.watch(soundModeProvider);
+    // 보호자가 모르는 번호 감지 토글을 ON 으로 바꾸면 권한 안내 자동 표시
+    ref.listen(seniorSettingsProvider, (prev, next) {
+      final prevOn = prev?.value?.unknownCallDetection ?? false;
+      final nextOn = next.value?.unknownCallDetection ?? false;
+      if (!prevOn && nextOn) {
+        _maybePromptCallPermission();
+      } else if (prevOn && !nextOn) {
+        _callCheckTimer?.cancel();
+        _callCheckTimer = null;
+      } else if (nextOn) {
+        _maybeStartCallChecker();
+      }
+    });
     return Scaffold(
       body: SeniorBackground(
         child: SafeArea(

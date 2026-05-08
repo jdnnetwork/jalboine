@@ -8,6 +8,8 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
+import android.provider.CallLog
+import android.provider.ContactsContract
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -16,6 +18,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val soundChannelName = "com.jalboine/sound_mode"
     private val onboardingChannelName = "com.jalboine/onboarding"
+    private val callLogChannelName = "com.jalboine/call_log"
     private val requestCodeHomeRole = 0xA001
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -80,6 +83,93 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, callLogChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "getRecentCalls" -> {
+                        val sinceMs = (call.argument<Number>("sinceMs"))?.toLong() ?: 0L
+                        try {
+                            result.success(getRecentCalls(sinceMs))
+                        } catch (e: SecurityException) {
+                            result.error("PERMISSION_DENIED", e.message, null)
+                        } catch (e: Exception) {
+                            result.error("CALL_LOG_ERROR", e.message, null)
+                        }
+                    }
+                    "isKnownNumber" -> {
+                        val number = call.argument<String>("number") ?: ""
+                        try {
+                            result.success(isKnownNumber(number))
+                        } catch (e: SecurityException) {
+                            result.error("PERMISSION_DENIED", e.message, null)
+                        } catch (e: Exception) {
+                            result.error("CONTACTS_ERROR", e.message, null)
+                        }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    /**
+     * sinceMs(epoch ms) 이후의 통화 기록을 최신 → 오래된 순으로 반환.
+     * 발신/수신/부재중 모두 포함. number, timestampMs, durationSec, type 키.
+     */
+    private fun getRecentCalls(sinceMs: Long): List<Map<String, Any?>> {
+        val out = mutableListOf<Map<String, Any?>>()
+        val projection = arrayOf(
+            CallLog.Calls.NUMBER,
+            CallLog.Calls.DATE,
+            CallLog.Calls.DURATION,
+            CallLog.Calls.TYPE,
+        )
+        val selection = "${CallLog.Calls.DATE} > ?"
+        val args = arrayOf(sinceMs.toString())
+        val cursor = contentResolver.query(
+            CallLog.Calls.CONTENT_URI,
+            projection,
+            selection,
+            args,
+            "${CallLog.Calls.DATE} DESC",
+        ) ?: return out
+        cursor.use { c ->
+            val iNumber = c.getColumnIndex(CallLog.Calls.NUMBER)
+            val iDate = c.getColumnIndex(CallLog.Calls.DATE)
+            val iDur = c.getColumnIndex(CallLog.Calls.DURATION)
+            val iType = c.getColumnIndex(CallLog.Calls.TYPE)
+            while (c.moveToNext()) {
+                out.add(
+                    mapOf(
+                        "number" to (c.getString(iNumber) ?: ""),
+                        "timestampMs" to c.getLong(iDate),
+                        "durationSec" to c.getInt(iDur),
+                        "type" to c.getInt(iType),
+                    )
+                )
+            }
+        }
+        return out
+    }
+
+    /**
+     * 주어진 번호가 연락처에 등록돼 있으면 true.
+     * 빈 문자열/null → 알 수 없음으로 처리해 true 반환 (오탐 방지).
+     */
+    private fun isKnownNumber(number: String): Boolean {
+        if (number.isBlank()) return true
+        val uri = Uri.withAppendedPath(
+            ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+            Uri.encode(number),
+        )
+        val cursor = contentResolver.query(
+            uri,
+            arrayOf(ContactsContract.PhoneLookup._ID),
+            null,
+            null,
+            null,
+        ) ?: return false
+        cursor.use { c -> return c.moveToFirst() }
     }
 
     private fun isDefaultLauncher(): Boolean {

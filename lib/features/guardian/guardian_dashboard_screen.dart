@@ -6,13 +6,23 @@ import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../models/senior_settings.dart';
 import '../../services/realtime_service.dart';
+import '../../models/call_alert.dart';
+import '../../services/call_alerts_service.dart';
 import 'tabs/home_apps_tab.dart';
 import 'tabs/medications_tab.dart';
 import 'tabs/emergency_tab.dart';
 import 'tabs/info_tab.dart';
 import 'tabs/messages_tab.dart';
+import 'tabs/safety_tab.dart';
 
-enum GuardianTab { homeApps, messages, medications, emergency, info }
+enum GuardianTab {
+  homeApps,
+  messages,
+  medications,
+  safety,
+  emergency,
+  info,
+}
 
 class GuardianDashboardScreen extends ConsumerStatefulWidget {
   const GuardianDashboardScreen({super.key});
@@ -161,6 +171,8 @@ class _DevPaired extends StatelessWidget {
             GuardianTab.messages => const MessagesTab(seniorId: _dummySeniorId),
             GuardianTab.medications =>
               const MedicationsTab(seniorId: _dummySeniorId),
+            GuardianTab.safety =>
+              SafetyTab(seniorId: _dummySeniorId, s: _dummySettings),
             GuardianTab.emergency =>
               EmergencyTab(seniorId: _dummySeniorId, s: _dummySettings),
             GuardianTab.info =>
@@ -252,11 +264,34 @@ class _Paired extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(remoteSeniorSettingsProvider(seniorId));
+    final alertsAsync = ref.watch(activeCallAlertsProvider(seniorId));
     return settings.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('$e')),
       data: (s) => Column(
         children: [
+          // 모르는 번호 통화 알림 배너 (가장 위)
+          alertsAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
+            data: (alerts) {
+              if (alerts.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: Column(
+                  children: [
+                    for (final a in alerts)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _CallAlertBanner(alert: a),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+          // 12h/24h 미사용 배너
+          if (s.inactivityAlert) _InactivityBanner(updatedAt: s.updatedAt),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
             child: _PhoneStatusCard(s: s),
@@ -266,12 +301,166 @@ class _Paired extends ConsumerWidget {
               GuardianTab.homeApps => HomeAppsTab(seniorId: seniorId, s: s),
               GuardianTab.messages => MessagesTab(seniorId: seniorId),
               GuardianTab.medications => MedicationsTab(seniorId: seniorId),
+              GuardianTab.safety => SafetyTab(seniorId: seniorId, s: s),
               GuardianTab.emergency => EmergencyTab(seniorId: seniorId, s: s),
               GuardianTab.info =>
                 InfoTab(seniorId: seniorId, onLogout: onLogout),
             },
           ),
           _BottomTabBar(active: tab, onChange: onTabChange),
+        ],
+      ),
+    );
+  }
+}
+
+class _InactivityBanner extends StatelessWidget {
+  final DateTime? updatedAt;
+  const _InactivityBanner({required this.updatedAt});
+
+  @override
+  Widget build(BuildContext context) {
+    if (updatedAt == null) return const SizedBox.shrink();
+    final hours = DateTime.now().difference(updatedAt!).inHours;
+    if (hours < 12) return const SizedBox.shrink();
+    final isUrgent = hours >= 24;
+    final bg =
+        isUrgent ? const Color(0xFFFFE4E4) : const Color(0xFFFFF3CC);
+    final fg =
+        isUrgent ? const Color(0xFFB41E1E) : const Color(0xFF7A5C00);
+    final text = isUrgent
+        ? '부모님이 24시간 이상 폰을 사용하지 않았어요. 확인이 필요합니다'
+        : '부모님이 12시간 이상 폰을 사용하지 않았어요';
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isUrgent ? Icons.warning_rounded : Icons.access_time_rounded,
+            color: fg,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: fg,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CallAlertBanner extends ConsumerStatefulWidget {
+  final CallAlert alert;
+  const _CallAlertBanner({required this.alert});
+
+  @override
+  ConsumerState<_CallAlertBanner> createState() => _CallAlertBannerState();
+}
+
+class _CallAlertBannerState extends ConsumerState<_CallAlertBanner> {
+  bool _busy = false;
+
+  String _fmtTime(DateTime dt) {
+    final ampm = dt.hour < 12 ? '오전' : '오후';
+    final h = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$ampm $h:$m';
+  }
+
+  String _fmtDuration(int? sec) {
+    if (sec == null || sec <= 0) return '';
+    final m = sec ~/ 60;
+    final s = sec % 60;
+    if (m == 0) return ' · 통화 $s초';
+    return ' · 통화 $m분 $s초';
+  }
+
+  Future<void> _dismiss() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await CallAlertsService.instance.dismiss(widget.alert.id);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = widget.alert;
+    final isUrgent = a.alertLevel == CallAlertLevel.urgent;
+    final bg = isUrgent ? const Color(0xFFFFE4E4) : const Color(0xFFFFF3CC);
+    final fg =
+        isUrgent ? const Color(0xFFB41E1E) : const Color(0xFF7A5C00);
+    final headline = switch (a.alertLevel) {
+      CallAlertLevel.urgent =>
+        '⚠️ 부모님이 모르는 번호와 통화 후 돈 얘기를 했다고 합니다! 즉시 확인하세요',
+      CallAlertLevel.normal => '부모님이 모르는 번호와 통화했어요',
+      CallAlertLevel.noResponse =>
+        '부모님이 모르는 번호와 통화했어요 (응답 없음)',
+    };
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            headline,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: fg,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${a.phoneNumber}${_fmtDuration(a.callDuration)} · ${_fmtTime(a.createdAt)}',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: fg.withValues(alpha: 0.85),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _busy ? null : _dismiss,
+              style: TextButton.styleFrom(
+                foregroundColor: fg,
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              child: const Text(
+                '확인했어요',
+                style:
+                    TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -311,6 +500,10 @@ class _PhoneStatusCard extends StatelessWidget {
                   icon: Icons.battery_charging_full_rounded,
                   label: '배터리',
                   value: s.batteryPct == null ? '?' : '${s.batteryPct}%',
+                  valueColor:
+                      (s.batteryAlert && s.batteryPct != null && s.batteryPct! <= 20)
+                          ? JD.cRed
+                          : null,
                 ),
               ),
               Expanded(
@@ -337,6 +530,36 @@ class _PhoneStatusCard extends StatelessWidget {
               ),
             ],
           ),
+          if (s.batteryAlert &&
+              s.batteryPct != null &&
+              s.batteryPct! <= 20) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFE4E4),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.battery_alert_rounded,
+                      color: JD.cRed, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '부모님 폰 배터리가 부족해요',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: JD.cRed,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -347,23 +570,26 @@ class _StatusItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final Color? valueColor;
   const _StatusItem({
     required this.icon,
     required this.label,
     required this.value,
+    this.valueColor,
   });
   @override
   Widget build(BuildContext context) {
+    final low = valueColor != null;
     return Column(
       children: [
         Container(
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: JD.gBlueSoft,
+            color: low ? const Color(0xFFFFE4E4) : JD.gBlueSoft,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: JD.gBlue, size: 22),
+          child: Icon(icon, color: low ? JD.cRed : JD.gBlue, size: 22),
         ),
         const SizedBox(height: 8),
         Text(
@@ -377,10 +603,10 @@ class _StatusItem extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w800,
-            color: JD.gInk,
+            color: valueColor ?? JD.gInk,
           ),
         ),
       ],
@@ -394,9 +620,10 @@ class _BottomTabBar extends StatelessWidget {
   const _BottomTabBar({required this.active, required this.onChange});
 
   static const _items = <(GuardianTab, String, IconData)>[
-    (GuardianTab.homeApps, '홈 화면', Icons.phone_android_rounded),
+    (GuardianTab.homeApps, '홈', Icons.phone_android_rounded),
     (GuardianTab.messages, '메시지', Icons.chat_bubble_rounded),
     (GuardianTab.medications, '약', Icons.medication_rounded),
+    (GuardianTab.safety, '안심', Icons.shield_rounded),
     (GuardianTab.emergency, '긴급', Icons.emergency_rounded),
     (GuardianTab.info, '정보', Icons.info_outline_rounded),
   ];
