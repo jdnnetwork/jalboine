@@ -446,7 +446,6 @@ class _SoundModeButton extends StatelessWidget {
   IconData get _icon => switch (mode) {
         SoundMode.sound => Icons.volume_up_rounded,
         SoundMode.vibrate => Icons.vibration_rounded,
-        SoundMode.silent => Icons.notifications_off_rounded,
       };
 
   @override

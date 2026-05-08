@@ -228,13 +228,11 @@ class _PhoneStatusCard extends StatelessWidget {
               Expanded(
                 child: _StatusItem(
                   icon: switch (s.soundMode) {
-                    'silent' => Icons.notifications_off_rounded,
                     'vibrate' => Icons.vibration_rounded,
                     _ => Icons.volume_up_rounded,
                   },
                   label: '소리',
                   value: switch (s.soundMode) {
-                    'silent' => '무음',
                     'vibrate' => '진동',
                     _ => '소리 켜짐',
                   },
