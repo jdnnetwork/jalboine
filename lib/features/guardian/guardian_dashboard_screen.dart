@@ -55,6 +55,25 @@ class _GuardianDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
+    // ===== DEV ONLY: ?dev=1 이면 더미 데이터로 대시보드 렌더 =====
+    final isDev =
+        GoRouterState.of(context).uri.queryParameters['dev'] == '1';
+    if (isDev) {
+      return Theme(
+        data: JTheme.guardian(),
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: _DevPaired(
+              tab: _tab,
+              onTabChange: (t) => setState(() => _tab = t),
+              onLogout: () => context.go('/guardian/login'),
+            ),
+          ),
+        ),
+      );
+    }
+    // ===== /DEV =====
     return Theme(
       data: JTheme.guardian(),
       child: Scaffold(
@@ -86,6 +105,72 @@ class _GuardianDashboardScreenState
     );
   }
 }
+
+// ===== DEV ONLY: 릴리즈 시 이 클래스 + 위 dev 분기 함께 삭제 =====
+class _DevPaired extends StatelessWidget {
+  final GuardianTab tab;
+  final ValueChanged<GuardianTab> onTabChange;
+  final VoidCallback onLogout;
+  const _DevPaired({
+    required this.tab,
+    required this.onTabChange,
+    required this.onLogout,
+  });
+
+  static const _dummySeniorId = '00000000-0000-0000-0000-000000000000';
+  static const _dummySettings = SeniorSettings(
+    userId: _dummySeniorId,
+    enabledApps: ['phone', 'message', 'kakaotalk', 'youtube'],
+    takesMedication: false,
+    emergencyContacts: [],
+    soundMode: 'sound',
+    batteryPct: 72,
+    online: true,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3CC),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Text(
+            'DEV MODE',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF7A5C00),
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          child: _PhoneStatusCard(s: _dummySettings),
+        ),
+        Expanded(
+          child: switch (tab) {
+            GuardianTab.homeApps =>
+              HomeAppsTab(seniorId: _dummySeniorId, s: _dummySettings),
+            GuardianTab.medications =>
+              const MedicationsTab(seniorId: _dummySeniorId),
+            GuardianTab.emergency =>
+              EmergencyTab(seniorId: _dummySeniorId, s: _dummySettings),
+            GuardianTab.info =>
+              InfoTab(seniorId: _dummySeniorId, onLogout: onLogout),
+          },
+        ),
+        _BottomTabBar(active: tab, onChange: onTabChange),
+      ],
+    );
+  }
+}
+// ===== /DEV =====
 
 class _NotPaired extends StatelessWidget {
   final VoidCallback onConnect;

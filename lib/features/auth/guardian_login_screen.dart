@@ -142,6 +142,25 @@ class _GuardianLoginScreenState extends ConsumerState<GuardianLoginScreen> {
                     ),
                   ),
                 ),
+                // ===== DEV ONLY: 릴리즈 시 이 블록만 삭제 =====
+                Center(
+                  child: TextButton(
+                    onPressed: _busy
+                        ? null
+                        : () => context.go('/guardian/connect-method?dev=1'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: JD.gInkMute,
+                    ),
+                    child: const Text(
+                      'DEV: 로그인 없이 진입',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                // ===== /DEV =====
               ],
             ),
           ),

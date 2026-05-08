@@ -24,6 +24,14 @@ class _ConnectMethodScreenState extends ConsumerState<ConnectMethodScreen> {
   }
 
   Future<void> _checkPaired() async {
+    // ===== DEV ONLY: 쿼리 ?dev=1 이면 인증 검사 건너뛰기 =====
+    final isDev =
+        GoRouterState.of(context).uri.queryParameters['dev'] == '1';
+    if (isDev) {
+      setState(() => _checking = false);
+      return;
+    }
+    // ===== /DEV =====
     try {
       final sb = ref.read(supabaseProvider);
       final uid = sb.auth.currentUser?.id;
@@ -118,6 +126,24 @@ class _ConnectMethodScreenState extends ConsumerState<ConnectMethodScreen> {
                         onTap: () => context.go('/guardian/connect-code'),
                       ),
                       const Spacer(),
+                      // ===== DEV ONLY: 릴리즈 시 이 블록만 삭제 =====
+                      Center(
+                        child: TextButton(
+                          onPressed: () =>
+                              context.go('/guardian/dashboard?dev=1'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: JD.gInkMute,
+                          ),
+                          child: const Text(
+                            'DEV: 바로 대시보드',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // ===== /DEV =====
                     ],
                   ),
                 ),
