@@ -29,6 +29,11 @@ class SeniorSettings {
   final bool inactivityAlert;
   final bool batteryAlert;
   final bool emergencySound;
+  final String? emergencyVoiceUrl;
+  final DateTime? emergencySoundAt;
+  final double? latitude;
+  final double? longitude;
+  final DateTime? locationUpdatedAt;
 
   const SeniorSettings({
     required this.userId,
@@ -47,6 +52,11 @@ class SeniorSettings {
     this.inactivityAlert = false,
     this.batteryAlert = false,
     this.emergencySound = false,
+    this.emergencyVoiceUrl,
+    this.emergencySoundAt,
+    this.latitude,
+    this.longitude,
+    this.locationUpdatedAt,
   });
 
   factory SeniorSettings.fromJson(Map<String, dynamic> j) => SeniorSettings(
@@ -73,6 +83,15 @@ class SeniorSettings {
         inactivityAlert: (j['inactivity_alert'] as bool?) ?? false,
         batteryAlert: (j['battery_alert'] as bool?) ?? false,
         emergencySound: (j['emergency_sound'] as bool?) ?? false,
+        emergencyVoiceUrl: j['emergency_voice_url'] as String?,
+        emergencySoundAt: j['emergency_sound_at'] == null
+            ? null
+            : DateTime.parse(j['emergency_sound_at'] as String).toLocal(),
+        latitude: (j['latitude'] as num?)?.toDouble(),
+        longitude: (j['longitude'] as num?)?.toDouble(),
+        locationUpdatedAt: j['location_updated_at'] == null
+            ? null
+            : DateTime.parse(j['location_updated_at'] as String).toLocal(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -114,6 +133,11 @@ class SeniorSettings {
     bool? inactivityAlert,
     bool? batteryAlert,
     bool? emergencySound,
+    String? emergencyVoiceUrl,
+    DateTime? emergencySoundAt,
+    double? latitude,
+    double? longitude,
+    DateTime? locationUpdatedAt,
   }) =>
       SeniorSettings(
         userId: userId,
@@ -133,6 +157,11 @@ class SeniorSettings {
         inactivityAlert: inactivityAlert ?? this.inactivityAlert,
         batteryAlert: batteryAlert ?? this.batteryAlert,
         emergencySound: emergencySound ?? this.emergencySound,
+        emergencyVoiceUrl: emergencyVoiceUrl ?? this.emergencyVoiceUrl,
+        emergencySoundAt: emergencySoundAt ?? this.emergencySoundAt,
+        latitude: latitude ?? this.latitude,
+        longitude: longitude ?? this.longitude,
+        locationUpdatedAt: locationUpdatedAt ?? this.locationUpdatedAt,
       );
 
   static const empty = SeniorSettings(

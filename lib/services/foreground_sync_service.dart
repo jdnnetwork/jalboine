@@ -1,6 +1,8 @@
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants.dart';
 
@@ -113,6 +115,33 @@ class _SyncTaskHandler extends TaskHandler {
         'online': online,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('user_id', uid);
+
+      // 위치 추적 ON 이고 권한 있으면 위치도 같이 푸시
+      try {
+        final row = await sb
+            .from('senior_settings')
+            .select('location_tracking')
+            .eq('user_id', uid)
+            .maybeSingle();
+        final tracking = (row?['location_tracking'] as bool?) ?? false;
+        if (!tracking) return;
+        final ok =
+            await Permission.locationWhenInUse.status.then((s) => s.isGranted);
+        if (!ok) return;
+        final enabled = await Geolocator.isLocationServiceEnabled();
+        if (!enabled) return;
+        final pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 15),
+        );
+        await sb.from('senior_settings').update({
+          'latitude': pos.latitude,
+          'longitude': pos.longitude,
+          'location_updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('user_id', uid);
+      } catch (_) {
+        // 위치는 비치명적
+      }
     } catch (_) {
       // 비치명적
     }

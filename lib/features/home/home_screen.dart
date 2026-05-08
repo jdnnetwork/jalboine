@@ -11,6 +11,7 @@ import '../../services/launcher_service.dart';
 import '../../services/onboarding_settings_service.dart';
 import '../../services/realtime_service.dart';
 import '../../services/foreground_sync_service.dart';
+import '../../services/location_service.dart';
 import '../../services/messages_service.dart';
 import '../../services/sound_mode_service.dart';
 import '../../services/status_sync_service.dart';
@@ -113,6 +114,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     await context.push('/safety/call-permission');
     _alertOpen = false;
     _maybeStartCallChecker();
+  }
+
+  /// 보호자가 위치 추적 토글 ON 시 권한 안내 화면.
+  Future<void> _maybePromptLocationPermission() async {
+    final fine = await LocationService.instance.hasFinePermission();
+    final bg = await LocationService.instance.hasBackgroundPermission();
+    if (fine && bg) {
+      LocationService.instance.pushOnce();
+      return;
+    }
+    if (_alertOpen || !mounted) return;
+    _alertOpen = true;
+    await context.push('/safety/location-permission');
+    _alertOpen = false;
+  }
+
+  /// 보호자가 emergency_sound=true 보낸 직후 강제 울리기 화면.
+  Future<void> _onEmergencySound() async {
+    if (_alertOpen || !mounted) return;
+    _alertOpen = true;
+    await context.push('/safety/emergency-sound');
+    _alertOpen = false;
   }
 
   void _onCardTap(String key) {
@@ -243,6 +266,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       } else if (nextOn) {
         _maybeStartCallChecker();
       }
+    });
+    // 위치 추적 토글 ON 으로 바뀌면 위치 권한 안내 화면 띄우기
+    ref.listen(seniorSettingsProvider, (prev, next) {
+      final prevOn = prev?.value?.locationTracking ?? false;
+      final nextOn = next.value?.locationTracking ?? false;
+      if (!prevOn && nextOn) _maybePromptLocationPermission();
+    });
+    // 보호자가 emergency_sound=true 보내면 강제 울리기 화면으로 이동
+    ref.listen(seniorSettingsProvider, (prev, next) {
+      final prevOn = prev?.value?.emergencySound ?? false;
+      final nextOn = next.value?.emergencySound ?? false;
+      if (!prevOn && nextOn) _onEmergencySound();
     });
     return Scaffold(
       body: SeniorBackground(

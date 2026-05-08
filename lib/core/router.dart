@@ -25,6 +25,10 @@ import '../features/emergency/emergency_screen.dart';
 import '../features/messages/senior_messages_screen.dart';
 import '../features/safety/call_permission_screen.dart';
 import '../features/safety/unknown_call_alert_screen.dart';
+import '../features/safety/location_permission_screen.dart';
+import '../features/safety/emergency_sound_screen.dart';
+import '../features/guardian/guardian_location_screen.dart';
+import '../features/guardian/voice_record_screen.dart';
 import '../features/medication_alarm/med_alarm_screen.dart';
 import '../features/guardian_mode/guardian_pin_screen.dart';
 import '../features/guardian/parent_connect_screen.dart';
@@ -100,6 +104,30 @@ final routerProvider = Provider<GoRouter>((ref) {
           return UnknownCallAlertScreen(
             phoneNumber: (extra['phone'] as String?) ?? '알 수 없음',
             durationSec: extra['duration'] as int?,
+          );
+        },
+      ),
+      GoRoute(
+          path: '/safety/location-permission',
+          builder: (_, _) => const LocationPermissionScreen()),
+      GoRoute(
+          path: '/safety/emergency-sound',
+          builder: (_, _) => const EmergencySoundScreen()),
+      GoRoute(
+        path: '/guardian/location',
+        builder: (_, s) {
+          final extra = (s.extra as Map?) ?? const {};
+          return GuardianLocationScreen(
+            seniorId: (extra['seniorId'] as String?) ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/guardian/voice-record',
+        builder: (_, s) {
+          final extra = (s.extra as Map?) ?? const {};
+          return VoiceRecordScreen(
+            seniorId: (extra['seniorId'] as String?) ?? '',
           );
         },
       ),

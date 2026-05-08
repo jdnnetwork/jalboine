@@ -19,7 +19,12 @@ class MainActivity : FlutterActivity() {
     private val soundChannelName = "com.jalboine/sound_mode"
     private val onboardingChannelName = "com.jalboine/onboarding"
     private val callLogChannelName = "com.jalboine/call_log"
+    private val volumeChannelName = "com.jalboine/volume"
     private val requestCodeHomeRole = 0xA001
+
+    // 강제 울리기 직전 볼륨을 저장해두기
+    private var savedMusicVolume: Int? = null
+    private var savedRingVolume: Int? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -80,6 +85,44 @@ class MainActivity : FlutterActivity() {
                         }
                     }
                     "getSdkInt" -> result.success(Build.VERSION.SDK_INT)
+                    else -> result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, volumeChannelName)
+            .setMethodCallHandler { call, result ->
+                val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                when (call.method) {
+                    "setMaxVolume" -> {
+                        try {
+                            if (savedMusicVolume == null) {
+                                savedMusicVolume = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+                                savedRingVolume = am.getStreamVolume(AudioManager.STREAM_RING)
+                            }
+                            val maxMusic = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                            val maxRing = am.getStreamMaxVolume(AudioManager.STREAM_RING)
+                            am.setStreamVolume(AudioManager.STREAM_MUSIC, maxMusic, 0)
+                            am.setStreamVolume(AudioManager.STREAM_RING, maxRing, 0)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("VOLUME_ERROR", e.message, null)
+                        }
+                    }
+                    "restoreVolume" -> {
+                        try {
+                            savedMusicVolume?.let {
+                                am.setStreamVolume(AudioManager.STREAM_MUSIC, it, 0)
+                            }
+                            savedRingVolume?.let {
+                                am.setStreamVolume(AudioManager.STREAM_RING, it, 0)
+                            }
+                            savedMusicVolume = null
+                            savedRingVolume = null
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.error("VOLUME_ERROR", e.message, null)
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }

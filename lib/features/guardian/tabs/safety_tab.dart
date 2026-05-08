@@ -1,5 +1,7 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/design_tokens.dart';
 import '../../../core/supabase.dart';
 import '../../../models/senior_settings.dart';
@@ -15,6 +17,31 @@ class SafetyTab extends ConsumerStatefulWidget {
 
 class _SafetyTabState extends ConsumerState<SafetyTab> {
   bool _busy = false;
+  final _previewer = AudioPlayer();
+  bool _previewing = false;
+
+  @override
+  void dispose() {
+    _previewer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _previewVoice(String url) async {
+    if (_previewing) {
+      await _previewer.stop();
+      setState(() => _previewing = false);
+      return;
+    }
+    setState(() => _previewing = true);
+    try {
+      await _previewer.play(UrlSource(url));
+      _previewer.onPlayerComplete.first.then((_) {
+        if (mounted) setState(() => _previewing = false);
+      });
+    } catch (_) {
+      if (mounted) setState(() => _previewing = false);
+    }
+  }
 
   Future<void> _toggle(String column, bool value) async {
     if (_busy) return;
@@ -56,7 +83,10 @@ class _SafetyTabState extends ConsumerState<SafetyTab> {
       await ref
           .read(supabaseProvider)
           .from('senior_settings')
-          .update({'emergency_sound': true}).eq('user_id', widget.seniorId);
+          .update({
+        'emergency_sound': true,
+        'emergency_sound_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('user_id', widget.seniorId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('긴급 소리 신호를 보냈습니다')));
@@ -108,6 +138,28 @@ class _SafetyTabState extends ConsumerState<SafetyTab> {
           sub: '부모님 위치를 실시간으로 확인해요',
           value: s.locationTracking,
           onChanged: (v) => _toggle('location_tracking', v),
+          extra: s.locationTracking
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push(
+                      '/guardian/location',
+                      extra: {'seniorId': widget.seniorId},
+                    ),
+                    icon: const Icon(Icons.map_rounded, size: 18),
+                    label: const Text('위치 보기'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: JD.gBlue,
+                      side: const BorderSide(color: JD.gBlue),
+                      minimumSize: const Size.fromHeight(44),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      textStyle: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                )
+              : null,
         ),
         const SizedBox(height: 12),
         _ToggleCard(
@@ -126,14 +178,19 @@ class _SafetyTabState extends ConsumerState<SafetyTab> {
           onChanged: (v) => _toggle('battery_alert', v),
         ),
         const SizedBox(height: 12),
-        _ButtonCard(
-          icon: Icons.volume_up_rounded,
-          title: '긴급 소리 보내기',
-          sub: '부모님 폰을 강제로 울려요',
-          buttonLabel: '보내기',
-          buttonColor: JD.cRed,
+        _EmergencySoundCard(
+          voiceUrl: s.emergencyVoiceUrl,
           busy: _busy,
-          onTap: _sendEmergencySound,
+          previewing: _previewing,
+          onRecord: () => context.push(
+            '/guardian/voice-record',
+            extra: {'seniorId': widget.seniorId},
+          ),
+          onPreview: () {
+            final url = s.emergencyVoiceUrl;
+            if (url != null) _previewVoice(url);
+          },
+          onSend: _sendEmergencySound,
         ),
       ],
     );
@@ -146,12 +203,14 @@ class _ToggleCard extends StatelessWidget {
   final String sub;
   final bool value;
   final ValueChanged<bool> onChanged;
+  final Widget? extra;
   const _ToggleCard({
     required this.icon,
     required this.title,
     required this.sub,
     required this.value,
     required this.onChanged,
+    this.extra,
   });
 
   @override
@@ -164,130 +223,191 @@ class _ToggleCard extends StatelessWidget {
         border: Border.all(color: JD.gLine, width: 1),
         boxShadow: JD.shadowBlueCard,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: JD.gBlueSoft,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: JD.gBlue, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: JD.gInk,
-                  ),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: JD.gBlueSoft,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  sub,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: JD.gInkMute,
-                  ),
+                child: Icon(icon, color: JD.gBlue, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: JD.gInk,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      sub,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: JD.gInkMute,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Switch(
+                value: value,
+                activeThumbColor: JD.gBlue,
+                onChanged: onChanged,
+              ),
+            ],
           ),
-          Switch(
-            value: value,
-            activeThumbColor: JD.gBlue,
-            onChanged: onChanged,
-          ),
+          ?extra,
         ],
       ),
     );
   }
 }
 
-class _ButtonCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String sub;
-  final String buttonLabel;
-  final Color buttonColor;
+class _EmergencySoundCard extends StatelessWidget {
+  final String? voiceUrl;
   final bool busy;
-  final VoidCallback onTap;
-  const _ButtonCard({
-    required this.icon,
-    required this.title,
-    required this.sub,
-    required this.buttonLabel,
-    required this.buttonColor,
+  final bool previewing;
+  final VoidCallback onRecord;
+  final VoidCallback onPreview;
+  final VoidCallback onSend;
+  const _EmergencySoundCard({
+    required this.voiceUrl,
     required this.busy,
-    required this.onTap,
+    required this.previewing,
+    required this.onRecord,
+    required this.onPreview,
+    required this.onSend,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasVoice = voiceUrl != null && voiceUrl!.isNotEmpty;
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: JD.gLine, width: 1),
         boxShadow: JD.shadowBlueCard,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE5E5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: buttonColor, size: 22),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFE5E5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.volume_up_rounded,
+                    color: JD.cRed, size: 22),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '긴급 소리 보내기',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: JD.gInk,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      '부모님 폰을 강제로 울려요',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: JD.gInkMute,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 12),
+          if (!hasVoice)
+            ElevatedButton.icon(
+              onPressed: busy ? null : onRecord,
+              icon: const Icon(Icons.mic_rounded, size: 18),
+              label: const Text('음성 녹음하기'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: JD.gBlue,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                textStyle: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w900),
+              ),
+            )
+          else ...[
+            Row(
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: JD.gInk,
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: busy ? null : onPreview,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: JD.gBlue,
+                      side: const BorderSide(color: JD.gBlue),
+                      minimumSize: const Size.fromHeight(44),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: Text(previewing ? '■ 정지' : '▶ 미리듣기'),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  sub,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: JD.gInkMute,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: busy ? null : onRecord,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: JD.gInkSoft,
+                      side: const BorderSide(color: JD.gLine),
+                      minimumSize: const Size.fromHeight(44),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text('다시 녹음'),
                   ),
                 ),
               ],
             ),
-          ),
-          ElevatedButton(
-            onPressed: busy ? null : onTap,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: buttonColor,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(72, 40),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              textStyle: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w900),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: busy ? null : onSend,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: JD.cRed,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(56),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                textStyle: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              child: const Text('보내기'),
             ),
-            child: Text(buttonLabel),
-          ),
+          ],
         ],
       ),
     );
