@@ -18,6 +18,23 @@ class _GuardianLoginScreenState extends ConsumerState<GuardianLoginScreen> {
   final _password = TextEditingController();
   bool _signupMode = false;
   bool _busy = false;
+  bool _agreeTerms = false;
+  bool _agreePrivacy = false;
+
+  bool get _allAgree => _agreeTerms && _agreePrivacy;
+  bool get _canSubmit =>
+      !_busy && (_signupMode ? _allAgree : true);
+
+  void _toggleAll(bool v) {
+    setState(() {
+      _agreeTerms = v;
+      _agreePrivacy = v;
+    });
+  }
+
+  void _viewTerms(String asset, String title) {
+    context.push('/terms/view', extra: {'asset': asset, 'title': title});
+  }
 
   @override
   void dispose() {
@@ -108,9 +125,35 @@ class _GuardianLoginScreenState extends ConsumerState<GuardianLoginScreen> {
                   label: '비밀번호',
                   obscure: true,
                 ),
+                if (_signupMode) ...[
+                  const SizedBox(height: 18),
+                  _AllAgreeRow(
+                    value: _allAgree,
+                    onTap: () => _toggleAll(!_allAgree),
+                  ),
+                  const SizedBox(height: 8),
+                  _AgreeRow(
+                    label: '이용약관 동의',
+                    value: _agreeTerms,
+                    onChanged: (v) => setState(() => _agreeTerms = v),
+                    onView: () => _viewTerms(
+                      'assets/terms/guardian_terms.md',
+                      '잘보이네 이용약관',
+                    ),
+                  ),
+                  _AgreeRow(
+                    label: '개인정보 수집 및 이용 동의',
+                    value: _agreePrivacy,
+                    onChanged: (v) => setState(() => _agreePrivacy = v),
+                    onView: () => _viewTerms(
+                      'assets/terms/guardian_privacy.md',
+                      '개인정보처리방침',
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: _busy ? null : _submit,
+                  onPressed: _canSubmit ? _submit : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: JD.gBlue,
                     foregroundColor: Colors.white,
@@ -166,6 +209,145 @@ class _GuardianLoginScreenState extends ConsumerState<GuardianLoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AllAgreeRow extends StatelessWidget {
+  final bool value;
+  final VoidCallback onTap;
+  const _AllAgreeRow({required this.value, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: JD.gBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: value ? JD.gBlue : JD.gLine,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            _CheckBox(value: value),
+            const SizedBox(width: 10),
+            const Text(
+              '전체 동의',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: JD.gInk,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AgreeRow extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback onView;
+  const _AgreeRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    required this.onView,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => onChanged(!value),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: _CheckBox(value: value),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(!value),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    const TextSpan(
+                      text: '[필수] ',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: JD.gBlue,
+                      ),
+                    ),
+                    TextSpan(
+                      text: label,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: JD.gInk,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: onView,
+            style: TextButton.styleFrom(
+              foregroundColor: JD.gInkSoft,
+              minimumSize: const Size(0, 32),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            child: const Text(
+              '보기',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CheckBox extends StatelessWidget {
+  final bool value;
+  const _CheckBox({required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: value ? JD.gBlue : Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: value ? JD.gBlue : const Color(0xFFCBD3DE),
+          width: 1.5,
+        ),
+      ),
+      child: value
+          ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+          : null,
     );
   }
 }

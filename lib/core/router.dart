@@ -11,6 +11,8 @@ import '../features/auth/guardian_login_screen.dart';
 import '../features/setup_intro/setup_intro_screen.dart';
 import '../features/setup_intro/setup_done_screen.dart';
 import '../features/onboarding/onboarding_flow.dart';
+import '../features/terms/senior_terms_agreement_screen.dart';
+import '../features/terms/terms_viewer_screen.dart';
 import '../features/onboarding/setup/launcher_guide_screen.dart';
 import '../features/onboarding/setup/launcher_done_screen.dart';
 import '../features/onboarding/setup/battery_guide_screen.dart';
@@ -57,6 +59,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/setup-intro',
           builder: (_, _) => const SetupIntroScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingFlow()),
+      GoRoute(
+          path: '/onboarding/terms',
+          builder: (_, _) => const SeniorTermsAgreementScreen()),
+      GoRoute(
+        path: '/terms/view',
+        builder: (_, s) {
+          final extra = (s.extra as Map?) ?? const {};
+          return TermsViewerScreen(
+            assetPath: (extra['asset'] as String?) ?? '',
+            title: (extra['title'] as String?) ?? '',
+          );
+        },
+      ),
       GoRoute(
           path: '/onboarding/launcher-guide',
           builder: (_, _) => const LauncherGuideScreen()),
