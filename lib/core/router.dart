@@ -30,6 +30,7 @@ import '../features/guardian_mode/guardian_pin_screen.dart';
 import '../features/guardian/parent_connect_screen.dart';
 import '../features/guardian/connect_method_screen.dart';
 import '../features/guardian/guardian_dashboard_screen.dart';
+import '../features/guardian/guardian_messages_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final sb = ref.watch(supabaseProvider);
@@ -118,6 +119,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/guardian/dashboard',
           builder: (_, _) => const GuardianDashboardScreen()),
+      GoRoute(
+        path: '/guardian/messages',
+        builder: (_, s) {
+          final extra = (s.extra as Map?) ?? const {};
+          return GuardianMessagesScreen(
+            seniorId: (extra['seniorId'] as String?) ?? '',
+          );
+        },
+      ),
       GoRoute(
           path: '/parent/connect',
           builder: (_, _) => const ParentConnectScreen()),

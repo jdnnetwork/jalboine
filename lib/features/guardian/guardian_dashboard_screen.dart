@@ -12,12 +12,10 @@ import 'tabs/home_apps_tab.dart';
 import 'tabs/medications_tab.dart';
 import 'tabs/emergency_tab.dart';
 import 'tabs/info_tab.dart';
-import 'tabs/messages_tab.dart';
 import 'tabs/safety_tab.dart';
 
 enum GuardianTab {
   homeApps,
-  messages,
   medications,
   safety,
   emergency,
@@ -168,7 +166,6 @@ class _DevPaired extends StatelessWidget {
           child: switch (tab) {
             GuardianTab.homeApps =>
               HomeAppsTab(seniorId: _dummySeniorId, s: _dummySettings),
-            GuardianTab.messages => const MessagesTab(seniorId: _dummySeniorId),
             GuardianTab.medications =>
               const MedicationsTab(seniorId: _dummySeniorId),
             GuardianTab.safety =>
@@ -270,7 +267,17 @@ class _Paired extends ConsumerWidget {
       error: (e, _) => Center(child: Text('$e')),
       data: (s) => Column(
         children: [
-          // 모르는 번호 통화 알림 배너 (가장 위)
+          // 상단 헤더: 메시지 아이콘 진입 버튼
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 12, 0),
+            child: Row(
+              children: [
+                const Spacer(),
+                _MessagesIconButton(seniorId: seniorId),
+              ],
+            ),
+          ),
+          // 모르는 번호 통화 알림 배너
           alertsAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, _) => const SizedBox.shrink(),
@@ -299,7 +306,6 @@ class _Paired extends ConsumerWidget {
           Expanded(
             child: switch (tab) {
               GuardianTab.homeApps => HomeAppsTab(seniorId: seniorId, s: s),
-              GuardianTab.messages => MessagesTab(seniorId: seniorId),
               GuardianTab.medications => MedicationsTab(seniorId: seniorId),
               GuardianTab.safety => SafetyTab(seniorId: seniorId, s: s),
               GuardianTab.emergency => EmergencyTab(seniorId: seniorId, s: s),
@@ -309,6 +315,36 @@ class _Paired extends ConsumerWidget {
           ),
           _BottomTabBar(active: tab, onChange: onTabChange),
         ],
+      ),
+    );
+  }
+}
+
+class _MessagesIconButton extends StatelessWidget {
+  final String seniorId;
+  const _MessagesIconButton({required this.seniorId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: JD.gBlueSoft,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => context.push(
+          '/guardian/messages',
+          extra: {'seniorId': seniorId},
+        ),
+        child: Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          child: const Icon(
+            Icons.chat_bubble_rounded,
+            color: JD.gBlue,
+            size: 22,
+          ),
+        ),
       ),
     );
   }
@@ -620,11 +656,10 @@ class _BottomTabBar extends StatelessWidget {
   const _BottomTabBar({required this.active, required this.onChange});
 
   static const _items = <(GuardianTab, String, IconData)>[
-    (GuardianTab.homeApps, '홈', Icons.phone_android_rounded),
-    (GuardianTab.messages, '메시지', Icons.chat_bubble_rounded),
-    (GuardianTab.medications, '약', Icons.medication_rounded),
+    (GuardianTab.homeApps, '홈 관리', Icons.phone_android_rounded),
+    (GuardianTab.medications, '약 관리', Icons.medication_rounded),
     (GuardianTab.safety, '안심', Icons.shield_rounded),
-    (GuardianTab.emergency, '긴급', Icons.emergency_rounded),
+    (GuardianTab.emergency, '긴급 연락', Icons.emergency_rounded),
     (GuardianTab.info, '정보', Icons.info_outline_rounded),
   ];
 
