@@ -11,6 +11,10 @@ import '../features/auth/guardian_login_screen.dart';
 import '../features/setup_intro/setup_intro_screen.dart';
 import '../features/setup_intro/setup_done_screen.dart';
 import '../features/onboarding/onboarding_flow.dart';
+import '../features/onboarding/setup/launcher_guide_screen.dart';
+import '../features/onboarding/setup/launcher_done_screen.dart';
+import '../features/onboarding/setup/battery_guide_screen.dart';
+import '../features/onboarding/setup/notification_guide_screen.dart';
 import '../features/medication_setup/med_has_screen.dart';
 import '../features/medication_setup/med_count_screen.dart';
 import '../features/medication_setup/med_hour_screen.dart';
@@ -45,6 +49,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/setup-intro',
           builder: (_, _) => const SetupIntroScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingFlow()),
+      GoRoute(
+          path: '/onboarding/launcher-guide',
+          builder: (_, _) => const LauncherGuideScreen()),
+      GoRoute(
+          path: '/onboarding/launcher-done',
+          builder: (_, _) => const LauncherDoneScreen()),
+      GoRoute(
+          path: '/onboarding/battery-guide',
+          builder: (_, _) => const BatteryGuideScreen()),
+      GoRoute(
+          path: '/onboarding/notification-guide',
+          builder: (_, _) => const NotificationGuideScreen()),
       GoRoute(path: '/med/has', builder: (_, _) => const MedHasScreen()),
       GoRoute(path: '/med/count', builder: (_, _) => const MedCountScreen()),
       GoRoute(

@@ -22,7 +22,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     try {
       await DeviceAuthService.instance.ensureSenior();
       if (!mounted) return;
-      context.go('/audio-guide-ask');
+      context.go('/onboarding/launcher-guide');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
