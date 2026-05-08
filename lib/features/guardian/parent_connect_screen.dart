@@ -144,12 +144,53 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
                   ),
                   child: const Text('연결하기'),
                 ),
+                // ===== DEV ONLY: 릴리즈 시 이 블록만 삭제 =====
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: _busy ? null : _devConnect,
+                  style: TextButton.styleFrom(
+                    foregroundColor: JD.gInkMute,
+                    minimumSize: const Size.fromHeight(36),
+                  ),
+                  child: const Text(
+                    'DEV: 테스트 연결',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                // ===== /DEV =====
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// DEV 전용: 코드 검증 없이 보호자 본인을 더미 senior로 묶고 대시보드로 이동.
+  /// 릴리즈 시 이 메서드와 위 TextButton을 함께 삭제하면 된다.
+  Future<void> _devConnect() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final sb = ref.read(supabaseProvider);
+      final uid = sb.auth.currentUser!.id;
+      await sb.from('pair_links').insert({
+        'senior_user_id': uid,
+        'guardian_user_id': uid,
+        'status': 'accepted',
+      });
+      if (!mounted) return;
+      context.go('/guardian/dashboard');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('DEV 연결 실패: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 }
 
