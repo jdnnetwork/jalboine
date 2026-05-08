@@ -21,6 +21,7 @@ import '../features/emergency/emergency_screen.dart';
 import '../features/medication_alarm/med_alarm_screen.dart';
 import '../features/guardian_mode/guardian_pin_screen.dart';
 import '../features/guardian/parent_connect_screen.dart';
+import '../features/guardian/connect_method_screen.dart';
 import '../features/guardian/guardian_dashboard_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -73,6 +74,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/guardian/login',
           builder: (_, _) => const GuardianLoginScreen()),
+      GoRoute(
+          path: '/guardian/connect-method',
+          builder: (_, _) => const ConnectMethodScreen()),
+      GoRoute(
+          path: '/guardian/connect-code',
+          builder: (_, _) => const ParentConnectScreen()),
       GoRoute(
           path: '/guardian/dashboard',
           builder: (_, _) => const GuardianDashboardScreen()),

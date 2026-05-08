@@ -10,7 +10,7 @@ class StatusSyncService {
   StatusSyncService._();
   static final instance = StatusSyncService._();
 
-  static const _interval = Duration(minutes: 5);
+  static const _interval = Duration(minutes: 3);
 
   final _battery = Battery();
   final _conn = Connectivity();
@@ -49,7 +49,7 @@ class StatusSyncService {
     }
   }
 
-  /// 5분마다 senior_settings에 상태 upsert. 인터넷 안 되면 다음 5분에 재시도.
+  /// 3분마다 senior_settings에 상태 upsert. 인터넷 안 되면 다음 주기에 재시도.
   void startPeriodic() {
     _timer?.cancel();
     pushOnce();

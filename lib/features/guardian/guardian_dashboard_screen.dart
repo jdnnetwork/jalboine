@@ -69,7 +69,7 @@ class _GuardianDashboardScreenState
               final sid = snap.data;
               if (sid == null) {
                 return _NotPaired(
-                  onConnect: () => context.push('/parent/connect'),
+                  onConnect: () => context.push('/guardian/connect-method'),
                   onLogout: _logout,
                 );
               }

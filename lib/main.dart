@@ -5,6 +5,7 @@ import 'core/router.dart';
 import 'core/supabase.dart';
 import 'core/theme.dart';
 import 'services/deep_link_service.dart';
+import 'services/foreground_sync_service.dart';
 import 'services/notification_service.dart';
 import 'services/sound_mode_service.dart';
 import 'services/status_sync_service.dart';
@@ -14,6 +15,7 @@ Future<void> main() async {
   await initSupabase();
   await NotificationService.instance.init();
   await DeepLinkService.instance.init();
+  ForegroundSyncService.instance.initOptions();
   runApp(const ProviderScope(child: JalboineApp()));
 }
 
@@ -28,21 +30,25 @@ class _JalboineAppState extends ConsumerState<JalboineApp> {
   @override
   void initState() {
     super.initState();
-    // 피보호자(익명) 세션이 살아있으면 5분 주기 상태 동기화 시작
+    // 피보호자(익명) 세션이 살아있으면 3분 주기 + 백그라운드 동기화 시작
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null && user.isAnonymous) {
       StatusSyncService.instance.startPeriodic();
+      ForegroundSyncService.instance.startIfNeeded();
     }
     Supabase.instance.client.auth.onAuthStateChange.listen((event) {
       final u = event.session?.user;
       if (u == null) {
         StatusSyncService.instance.stop();
+        ForegroundSyncService.instance.stop();
         return;
       }
       if (u.isAnonymous) {
         StatusSyncService.instance.startPeriodic();
+        ForegroundSyncService.instance.startIfNeeded();
       } else {
         StatusSyncService.instance.stop();
+        ForegroundSyncService.instance.stop();
       }
     });
   }

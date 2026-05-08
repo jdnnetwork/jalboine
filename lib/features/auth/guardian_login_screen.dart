@@ -52,7 +52,7 @@ class _GuardianLoginScreenState extends ConsumerState<GuardianLoginScreen> {
         });
       }
       if (!mounted) return;
-      context.go('/guardian/dashboard');
+      context.go('/guardian/connect-method');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)

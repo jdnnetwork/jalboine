@@ -25,6 +25,7 @@ dependencies:
   connectivity_plus: ^6.0.0
   app_links: ^6.0.0
   flutter_ringtone_player: ^4.0.0+3
+  flutter_foreground_task: ^8.10.0
 
 dev_dependencies:
   flutter_test:

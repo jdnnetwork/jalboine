@@ -30,7 +30,7 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
     final code = _code.text.trim();
     if (code.length != 4 || int.tryParse(code) == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('4자리 숫자 코드를 입력해주세요')));
+          const SnackBar(content: Text('번호가 맞지 않아요. 다시 확인해주세요')));
       return;
     }
     setState(() => _busy = true);
@@ -47,7 +47,7 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
       if (row == null || row['senior_user_id'] == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('일치하는 코드가 없어요')));
+            const SnackBar(content: Text('번호가 맞지 않아요. 다시 확인해주세요')));
         return;
       }
       await sb.from('pair_links').update({
@@ -77,10 +77,10 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _Back(onTap: () => context.go('/guardian/dashboard')),
+                _Back(onTap: () => context.go('/guardian/connect-method')),
                 const SizedBox(height: 28),
                 const Text(
-                  '연결 코드 입력',
+                  '연결 번호 입력',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -90,7 +90,7 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  '부모님 폰에 표시된 4자리 숫자를 입력해주세요',
+                  '부모님이 알려주신 연결 번호를 입력해주세요',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,

@@ -9,6 +9,7 @@ import '../../services/audio_service.dart';
 import '../../services/launcher_service.dart';
 import '../../services/onboarding_settings_service.dart';
 import '../../services/realtime_service.dart';
+import '../../services/foreground_sync_service.dart';
 import '../../services/sound_mode_service.dart';
 import '../../services/status_sync_service.dart';
 import '../pairing/family_connect_dialog.dart';
@@ -21,16 +22,39 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   String? _primedKey;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 화면이 뜰 때마다 즉시 동기화 + 3분 주기 시작
       StatusSyncService.instance.pushOnce();
+      StatusSyncService.instance.startPeriodic();
       await OnboardingSettingsService.loadFromProfiles(ref);
+      // 백그라운드 Foreground Service도 살아있게
+      await ForegroundSyncService.instance.startIfNeeded();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      StatusSyncService.instance.pushOnce();
+      StatusSyncService.instance.startPeriodic();
+    } else if (state == AppLifecycleState.paused) {
+      StatusSyncService.instance.stop();
+    }
   }
 
   void _onCardTap(String key) {
