@@ -16,6 +16,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val soundChannelName = "com.jalboine/sound_mode"
     private val onboardingChannelName = "com.jalboine/onboarding"
+    private val requestCodeHomeRole = 0xA001
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -88,24 +89,33 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun requestDefaultLauncher() {
+        // 1) Android Q+ : RoleManager.ROLE_HOME — 반드시 startActivityForResult 사용
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val rm = getSystemService(Context.ROLE_SERVICE) as RoleManager
-            if (rm.isRoleAvailable(RoleManager.ROLE_HOME)) {
-                if (!rm.isRoleHeld(RoleManager.ROLE_HOME)) {
+            try {
+                val rm = getSystemService(Context.ROLE_SERVICE) as RoleManager
+                if (rm.isRoleAvailable(RoleManager.ROLE_HOME) &&
+                    !rm.isRoleHeld(RoleManager.ROLE_HOME)) {
                     val intent = rm.createRequestRoleIntent(RoleManager.ROLE_HOME)
-                    startActivity(intent)
+                    startActivityForResult(intent, requestCodeHomeRole)
                     return
                 }
+            } catch (_: Exception) {
+                // 폴백으로 떨어짐
             }
         }
-        // <Q 또는 ROLE_HOME 미사용: 시스템 홈 설정으로 보냄
+        // 2) 폴백: 시스템 홈 설정 화면
         try {
-            val intent = Intent(Settings.ACTION_HOME_SETTINGS)
-            startActivity(intent)
+            startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
+            return
         } catch (_: Exception) {
-            // 마지막 폴백: HOME chooser
+            // 다음 폴백
+        }
+        // 3) 마지막 폴백: HOME chooser
+        try {
             val pickIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
             startActivity(Intent.createChooser(pickIntent, null))
+        } catch (_: Exception) {
+            // 어떤 폴백도 안 되면 그냥 무시 (Dart 쪽이 다음 화면으로 진행)
         }
     }
 }
