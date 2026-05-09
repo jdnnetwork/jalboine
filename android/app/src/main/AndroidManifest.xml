@@ -63,10 +63,10 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Google Maps API key. 실제 키로 교체하세요 (Google Cloud Console에서 발급). -->
+        <!-- Google Maps API key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_GOOGLE_MAPS_API_KEY"/>
+            android:value="AIzaSyC4GrNhQpDYuTcQfCEYQY-XzTLtSDKwoDg"/>
 
         <!-- FCM 기본 채널 ID. notification_service / fcm_service 와 일치 -->
         <meta-data

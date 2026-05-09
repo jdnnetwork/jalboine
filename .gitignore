@@ -1,3 +1,12 @@
+# Secrets
+.env
+.env.*
+*service-account*.json
+firebase-sa*.json
+
+# Supabase CLI 로컬 캐시
+supabase/.temp/
+
 # Miscellaneous
 *.class
 *.log
