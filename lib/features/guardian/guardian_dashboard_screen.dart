@@ -8,6 +8,7 @@ import '../../models/senior_settings.dart';
 import '../../services/realtime_service.dart';
 import '../../models/call_alert.dart';
 import '../../services/call_alerts_service.dart';
+import '../../services/subscription_service.dart';
 import 'tabs/home_apps_tab.dart';
 import 'tabs/medications_tab.dart';
 import 'tabs/emergency_tab.dart';
@@ -313,8 +314,60 @@ class _Paired extends ConsumerWidget {
                 InfoTab(seniorId: seniorId, onLogout: onLogout),
             },
           ),
+          const _SubscriptionBanner(),
           _BottomTabBar(active: tab, onChange: onTabChange),
         ],
+      ),
+    );
+  }
+}
+
+class _SubscriptionBanner extends ConsumerWidget {
+  const _SubscriptionBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPremium = ref.watch(subscriptionStatusProvider).maybeWhen(
+          data: (v) => v.isPremium,
+          orElse: () => false,
+        );
+    if (isPremium) return const SizedBox.shrink();
+    return Material(
+      color: const Color(0xFFEEF3FF),
+      child: InkWell(
+        onTap: () => context.push('/guardian/subscription'),
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              const Icon(Icons.shield_rounded,
+                  color: JD.gBlue, size: 18),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  '안심 프리미엄으로 업그레이드하면 안심 기능을 이용할 수 있어요',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: JD.gInk,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                '자세히 보기',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: JD.gBlue,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

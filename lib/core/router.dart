@@ -31,6 +31,7 @@ import '../features/safety/location_permission_screen.dart';
 import '../features/safety/emergency_sound_screen.dart';
 import '../features/guardian/guardian_location_screen.dart';
 import '../features/guardian/voice_record_screen.dart';
+import '../features/subscription/subscription_screen.dart';
 import '../features/medication_alarm/med_alarm_screen.dart';
 import '../features/guardian_mode/guardian_pin_screen.dart';
 import '../features/guardian/parent_connect_screen.dart';
@@ -146,6 +147,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+      GoRoute(
+          path: '/guardian/subscription',
+          builder: (_, _) => const SubscriptionScreen()),
       GoRoute(path: '/alarm', builder: (_, _) => const MedAlarmScreen()),
       GoRoute(
           path: '/guardian/pin',

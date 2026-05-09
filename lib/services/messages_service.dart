@@ -149,6 +149,20 @@ final conversationProvider =
       .watchConversation(me: key.me, partner: key.partner);
 });
 
+class MonthlyCounts {
+  final int text;
+  final int image;
+  const MonthlyCounts({required this.text, required this.image});
+}
+
+/// 이번 달에 내가 보낸 텍스트/이미지 메시지 수. 전송 후 invalidate 로 새로고침.
+final monthlyMessageCountsProvider =
+    FutureProvider<MonthlyCounts>((ref) async {
+  final t = await MessagesService.instance.monthlyTextCount();
+  final i = await MessagesService.instance.monthlyImageCount();
+  return MonthlyCounts(text: t, image: i);
+});
+
 class ConversationKey {
   final String me;
   final String partner;
