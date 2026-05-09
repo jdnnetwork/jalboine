@@ -10,6 +10,9 @@ class NotificationService {
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
 
+  /// FCM 포그라운드 알림 표시 등 외부에서 plugin 직접 사용 시.
+  FlutterLocalNotificationsPlugin get plugin => _plugin;
+
   Future<void> init() async {
     if (_ready) return;
     tzdata.initializeTimeZones();

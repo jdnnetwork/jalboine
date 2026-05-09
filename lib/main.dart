@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'core/router.dart';
 import 'core/supabase.dart';
 import 'core/theme.dart';
 import 'services/deep_link_service.dart';
+import 'services/fcm_service.dart';
 import 'services/foreground_sync_service.dart';
 import 'services/notification_service.dart';
 import 'services/sound_mode_service.dart';
@@ -16,10 +18,19 @@ Future<void> main() async {
   await SystemChrome.setPreferredOrientations(const [
     DeviceOrientation.portraitUp,
   ]);
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {
+    // google-services.json 미배치 등 — 푸시 비활성으로 진행
+  }
   await initSupabase();
   await NotificationService.instance.init();
   await DeepLinkService.instance.init();
   ForegroundSyncService.instance.initOptions();
+  // Firebase 초기화 성공 시에만 FCM 셋업
+  try {
+    await FcmService.instance.init();
+  } catch (_) {}
   runApp(const ProviderScope(child: JalboineApp()));
 }
 
@@ -57,11 +68,27 @@ class _JalboineAppState extends ConsumerState<JalboineApp> {
     });
   }
 
+  bool _tapHandlerRegistered = false;
+
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     // soundMode를 senior_settings에서 받아 즉시 반영
     ref.listen(seniorSettingsForBootstrap, (_, _) {});
+    if (!_tapHandlerRegistered) {
+      _tapHandlerRegistered = true;
+      // 라우터 준비 후 FCM 탭 핸들러 등록.
+      // route 키가 있으면 그 경로로, 없으면 기본 라우팅(보호자=대시보드/어르신=메시지).
+      FcmService.instance.registerTapHandler((data) {
+        final route = data['route'] as String?;
+        final user = Supabase.instance.client.auth.currentUser;
+        final dest = route ??
+            (user != null && user.isAnonymous
+                ? '/messages'
+                : '/guardian/dashboard');
+        router.go(dest);
+      });
+    }
     return MaterialApp.router(
       title: '잘보이네',
       theme: JTheme.light(),

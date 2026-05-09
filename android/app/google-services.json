@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "786912775371",
+    "project_id": "jalboine-ce6f2",
+    "storage_bucket": "jalboine-ce6f2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:786912775371:android:a3c3652b23b86118291f4e",
+        "android_client_info": {
+          "package_name": "com.jalboine.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBp4kIc-2zKU2zTCmyC5EKArzGi6Ug9aFU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

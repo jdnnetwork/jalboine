@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/supabase.dart';
 import '../models/message.dart';
+import 'push_service.dart';
 
 class MessagesService {
   MessagesService._();
@@ -103,6 +104,7 @@ class MessagesService {
       'receiver_id': receiverId,
       'content': text,
     });
+    await _notifyMessageReceived(uid: uid, receiverId: receiverId);
   }
 
   /// 이미지 전송. 한도 초과 시 [LimitExceeded] throw.
@@ -126,6 +128,37 @@ class MessagesService {
       'receiver_id': receiverId,
       'image_url': url,
     });
+    await _notifyMessageReceived(uid: uid, receiverId: receiverId);
+  }
+
+  /// 메시지 수신 푸시. sender role 에 따라 본문/route 다르게 보냄.
+  Future<void> _notifyMessageReceived({
+    required String uid,
+    required String receiverId,
+  }) async {
+    try {
+      final sb = supabaseClient;
+      final me = await sb
+          .from('profiles')
+          .select('role')
+          .eq('user_id', uid)
+          .maybeSingle();
+      final senderIsSenior = (me?['role'] as String?) == 'senior';
+      // sender 가 senior 면 receiver 는 guardian → 보호자에게 알림
+      final title = senderIsSenior
+          ? '부모님에게 메시지가 왔어요'
+          : '가족에게 메시지가 왔어요';
+      // sender 가 senior 면 보호자가 받음 → 대시보드, 반대면 메시지 화면
+      final route = senderIsSenior ? '/guardian/dashboard' : '/messages';
+      await PushService.instance.sendTo(
+        userId: receiverId,
+        title: title,
+        body: '메시지를 확인해보세요',
+        data: {'route': route},
+      );
+    } catch (_) {
+      // best-effort
+    }
   }
 }
 

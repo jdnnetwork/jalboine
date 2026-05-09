@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/supabase.dart';
 import '../models/call_alert.dart';
+import 'push_service.dart';
 
 class CallAlertsService {
   CallAlertsService._();
@@ -19,6 +20,41 @@ class CallAlertsService {
       'call_duration': durationSec,
       'alert_level': alertLevelToString(level),
     });
+    await _notifyGuardian(
+      seniorId: seniorId,
+      level: level,
+      phoneNumber: phoneNumber,
+    );
+  }
+
+  /// 페어된 보호자에게 푸시. urgent 면 강한 본문, 그 외엔 기본 본문.
+  Future<void> _notifyGuardian({
+    required String seniorId,
+    required CallAlertLevel level,
+    required String phoneNumber,
+  }) async {
+    try {
+      final sb = supabaseClient;
+      final pair = await sb
+          .from('pair_links')
+          .select('guardian_user_id')
+          .eq('senior_user_id', seniorId)
+          .eq('status', 'accepted')
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      final gid = pair?['guardian_user_id'] as String?;
+      if (gid == null) return;
+      final isUrgent = level == CallAlertLevel.urgent;
+      await PushService.instance.sendTo(
+        userId: gid,
+        title: isUrgent ? '⚠️ 긴급! 보이스피싱 의심' : '부모님이 모르는 번호와 통화했어요',
+        body: phoneNumber,
+        data: const {'route': '/guardian/dashboard'},
+      );
+    } catch (_) {
+      // best-effort
+    }
   }
 
   /// 보호자가 dismiss.
