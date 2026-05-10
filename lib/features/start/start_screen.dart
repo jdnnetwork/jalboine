@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,7 +18,6 @@ class _StartScreenState extends ConsumerState<StartScreen>
 
   static const _ink = Color(0xFF2D3460);
   static const _inkSoft = Color(0xFF4A5088);
-  static const _hint = Color(0xFF6B7094);
   static const _accent = Color(0xFF6C63FF);
 
   @override
@@ -81,48 +79,45 @@ class _StartScreenState extends ConsumerState<StartScreen>
                   fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 22),
               const Text(
                 '잘보이네',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 40,
+                  fontSize: 52,
                   fontWeight: FontWeight.w800,
                   color: _ink,
-                  letterSpacing: -1.4,
+                  letterSpacing: -1.8,
                   height: 1.05,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               const Text(
                 '어르신을 위한 쉬운 스마트폰',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 24,
                   fontWeight: FontWeight.w600,
                   color: _inkSoft,
-                  letterSpacing: -0.4,
+                  letterSpacing: -0.5,
                 ),
               ),
               const Spacer(flex: 2),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _StartCard(
+                child: _StartButton(
                   busy: _busy,
-                  onStart: _start,
+                  onTap: _start,
                   accent: _accent,
-                  hintColor: _hint,
                 ),
               ),
-              const Spacer(flex: 2),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: _GuardianHint(
-                  onTap: () => context.go('/guardian/login'),
-                  ink: _ink,
-                  inkSoft: _inkSoft,
-                ),
+              const SizedBox(height: 24),
+              _GuardianHint(
+                onTap: () => context.go('/guardian/login'),
+                ink: _ink,
+                inkSoft: _inkSoft,
               ),
+              const Spacer(flex: 1),
             ],
           ),
         ),
@@ -131,69 +126,58 @@ class _StartScreenState extends ConsumerState<StartScreen>
   }
 }
 
-class _StartCard extends StatelessWidget {
+class _StartButton extends StatelessWidget {
   final bool busy;
-  final VoidCallback onStart;
+  final VoidCallback onTap;
   final Color accent;
-  final Color hintColor;
-  const _StartCard({
+  const _StartButton({
     required this.busy,
-    required this.onStart,
+    required this.onTap,
     required this.accent,
-    required this.hintColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.3),
+    return SizedBox(
+      width: double.infinity,
+      height: 120,
+      child: ElevatedButton(
+        onPressed: busy ? null : onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accent,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Column(
-            children: [
-              SizedBox(
-                width: double.infinity,
-                height: 80,
-                child: ElevatedButton(
-                  onPressed: busy ? null : onStart,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accent,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: const Text(
-                    '→ 시작하기',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.8,
-                    ),
-                  ),
-                ),
+          padding: EdgeInsets.zero,
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '시작하기',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 38,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: -1.2,
+                height: 1.1,
               ),
-              const SizedBox(height: 14),
-              Text(
-                '(이 버튼을 누르세요)',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: hintColor,
-                ),
+            ),
+            SizedBox(height: 6),
+            Text(
+              '이 버튼을 누르세요',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xB3FFFFFF),
+                letterSpacing: -0.3,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -218,26 +202,26 @@ class _GuardianHint extends StatelessWidget {
         Text(
           '가족 및 어르신을 도와주시는 분은',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
             color: inkSoft,
-            letterSpacing: -0.3,
+            letterSpacing: -0.4,
           ),
         ),
         const SizedBox(height: 4),
         InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Text(
               '여기를 눌러주세요',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: ink,
                 decoration: TextDecoration.underline,
                 decorationColor: ink,
-                letterSpacing: -0.3,
+                letterSpacing: -0.4,
               ),
             ),
           ),
