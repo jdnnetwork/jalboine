@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,24 +15,45 @@ import 'services/sound_mode_service.dart';
 import 'services/status_sync_service.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations(const [
-    DeviceOrientation.portraitUp,
-  ]);
+  // 어떤 init 단계가 깨져도 앱은 켜져야 한다 — 모든 단계를 개별 try/catch.
+  await runZonedGuarded<Future<void>>(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    await _safeInit('orientation', () async {
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.portraitUp,
+      ]);
+    });
+    await _safeInit('supabase', initSupabase);
+    await _safeInit('notification', NotificationService.instance.init);
+    await _safeInit('deeplink', DeepLinkService.instance.init);
+    await _safeInit(
+      'foreground_options',
+      () async => ForegroundSyncService.instance.initOptions(),
+    );
+    // Firebase + FCM — 에뮬레이터에 Play Services 없으면 native crash 가능,
+    // 그래서 격리해서 호출하고 어떤 에러도 앱 시작을 막지 못하게 한다.
+    await _safeInit('firebase', () async {
+      await Firebase.initializeApp();
+    });
+    await _safeInit('fcm', FcmService.instance.init);
+
+    runApp(const ProviderScope(child: JalboineApp()));
+  }, (e, st) {
+    // ignore: avoid_print
+    print('jalboine fatal in main(): $e\n$st');
+  });
+}
+
+Future<void> _safeInit(String name, Future<void> Function() fn) async {
   try {
-    await Firebase.initializeApp();
-  } catch (_) {
-    // google-services.json 미배치 등 — 푸시 비활성으로 진행
+    await fn();
+    // ignore: avoid_print
+    print('jalboine init ok: $name');
+  } catch (e, st) {
+    // ignore: avoid_print
+    print('jalboine init FAIL $name: $e\n$st');
   }
-  await initSupabase();
-  await NotificationService.instance.init();
-  await DeepLinkService.instance.init();
-  ForegroundSyncService.instance.initOptions();
-  // Firebase 초기화 성공 시에만 FCM 셋업
-  try {
-    await FcmService.instance.init();
-  } catch (_) {}
-  runApp(const ProviderScope(child: JalboineApp()));
 }
 
 class JalboineApp extends ConsumerStatefulWidget {

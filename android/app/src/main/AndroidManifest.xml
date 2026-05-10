@@ -84,6 +84,15 @@
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher"/>
 
+        <!-- 에뮬레이터/Play Services 미설치 환경에서 cold-start crash 방지.
+             Firebase 자체는 main.dart 의 Firebase.initializeApp() 에서 명시 초기화. -->
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false"/>
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false"/>
+
         <receiver android:exported="false"
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"/>
         <receiver android:exported="false"
