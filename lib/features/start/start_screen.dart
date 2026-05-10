@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -60,7 +61,7 @@ class _StartScreenState extends ConsumerState<StartScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFD0D8F0), Color(0xFFB8C4E8)],
+            colors: [Color(0xFFDDE4F5), Color(0xFFA8B5DC)],
           ),
         ),
         child: SafeArea(
@@ -105,13 +106,13 @@ class _StartScreenState extends ConsumerState<StartScreen>
               const Spacer(flex: 2),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _StartButton(
+                child: _StartCard(
                   busy: _busy,
-                  onTap: _start,
+                  onStart: _start,
                   accent: _accent,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               _GuardianHint(
                 onTap: () => context.go('/guardian/login'),
                 ink: _ink,
@@ -126,58 +127,71 @@ class _StartScreenState extends ConsumerState<StartScreen>
   }
 }
 
-class _StartButton extends StatelessWidget {
+class _StartCard extends StatelessWidget {
   final bool busy;
-  final VoidCallback onTap;
+  final VoidCallback onStart;
   final Color accent;
-  const _StartButton({
+  const _StartCard({
     required this.busy,
-    required this.onTap,
+    required this.onStart,
     required this.accent,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 120,
-      child: ElevatedButton(
-        onPressed: busy ? null : onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: accent,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(24),
           ),
-          padding: EdgeInsets.zero,
-        ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '시작하기',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 38,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: -1.2,
-                height: 1.1,
+          child: SizedBox(
+            width: double.infinity,
+            height: 200,
+            child: ElevatedButton(
+              onPressed: busy ? null : onStart,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accent,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '시작하기',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 44,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -1.4,
+                      height: 1.05,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    '이 버튼을 누르세요',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xB3FFFFFF),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 6),
-            Text(
-              '이 버튼을 누르세요',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xB3FFFFFF),
-                letterSpacing: -0.3,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
