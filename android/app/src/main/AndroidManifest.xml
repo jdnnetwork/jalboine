@@ -58,6 +58,14 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" android:host="jalboine.app" android:pathPrefix="/connect"/>
             </intent-filter>
+
+            <!-- Supabase OAuth (Google) 콜백 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="jalboine" android:host="login-callback"/>
+            </intent-filter>
         </activity>
         <meta-data
             android:name="flutterEmbedding"

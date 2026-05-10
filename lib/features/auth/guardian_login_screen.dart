@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
@@ -36,11 +38,54 @@ class _GuardianLoginScreenState extends ConsumerState<GuardianLoginScreen> {
     context.push('/terms/view', extra: {'asset': asset, 'title': title});
   }
 
+  StreamSubscription<AuthState>? _authSub;
+
   @override
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _authSub?.cancel();
     super.dispose();
+  }
+
+  /// 구글 OAuth — 브라우저 열고 콜백으로 돌아온 다음 onAuthStateChange 로 감지.
+  Future<void> _googleSignIn() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final sb = ref.read(supabaseProvider);
+    // signInWithOAuth 후에 들어오는 첫 signedIn 이벤트만 처리
+    _authSub?.cancel();
+    _authSub = sb.auth.onAuthStateChange.listen((event) async {
+      if (event.event != AuthChangeEvent.signedIn) return;
+      await _authSub?.cancel();
+      _authSub = null;
+      final uid = sb.auth.currentUser?.id;
+      if (uid == null) return;
+      try {
+        await sb.from('profiles').upsert({
+          'user_id': uid,
+          'role': 'guardian',
+        });
+      } catch (_) {
+        // 비치명적
+      }
+      if (!mounted) return;
+      setState(() => _busy = false);
+      context.go('/guardian/connect-method');
+    });
+    try {
+      await sb.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'jalboine://login-callback',
+      );
+    } catch (e) {
+      _authSub?.cancel();
+      _authSub = null;
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$e')));
+      setState(() => _busy = false);
+    }
   }
 
   Future<void> _submit() async {
@@ -114,6 +159,13 @@ class _GuardianLoginScreenState extends ConsumerState<GuardianLoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
+                _GoogleButton(
+                  busy: _busy,
+                  onTap: _googleSignIn,
+                ),
+                const SizedBox(height: 18),
+                const _OrDivider(),
+                const SizedBox(height: 18),
                 _Field(
                   controller: _email,
                   label: '이메일',
@@ -209,6 +261,128 @@ class _GuardianLoginScreenState extends ConsumerState<GuardianLoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _GoogleButton extends StatelessWidget {
+  final bool busy;
+  final VoidCallback onTap;
+  const _GoogleButton({required this.busy, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: busy ? null : onTap,
+        child: Container(
+          height: 56,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE0E4EC), width: 1.5),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _GoogleLogo(size: 22),
+              SizedBox(width: 12),
+              Text(
+                '구글로 시작하기',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1F1F1F),
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 4색 G 로고 — Google 브랜드 가이드라인 색상.
+class _GoogleLogo extends StatelessWidget {
+  final double size;
+  const _GoogleLogo({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(painter: _GoogleGPainter()),
+    );
+  }
+}
+
+class _GoogleGPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    final cx = s / 2;
+    final cy = s / 2;
+    final r = s * 0.45;
+    final stroke = s * 0.18;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.butt;
+    final rect = Rect.fromCircle(center: Offset(cx, cy), radius: r);
+    // Blue (top-right)
+    canvas.drawArc(
+        rect, -1.4, 1.4, false, paint..color = const Color(0xFF4285F4));
+    // Green (bottom-right)
+    canvas.drawArc(
+        rect, 0.0, 1.4, false, paint..color = const Color(0xFF34A853));
+    // Yellow (bottom-left)
+    canvas.drawArc(
+        rect, 1.4, 1.4, false, paint..color = const Color(0xFFFBBC05));
+    // Red (top-left)
+    canvas.drawArc(
+        rect, 2.8, 1.5, false, paint..color = const Color(0xFFEA4335));
+    // Horizontal bar (the G's tail)
+    final bar = Paint()..color = const Color(0xFF4285F4);
+    canvas.drawRect(
+      Rect.fromLTWH(cx, cy - stroke / 2, r + stroke / 2, stroke),
+      bar,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        Expanded(
+          child: Divider(color: Color(0xFFE6E9F0), thickness: 1),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            '또는',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF9099AC),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Divider(color: Color(0xFFE6E9F0), thickness: 1),
+        ),
+      ],
     );
   }
 }
