@@ -1,10 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/design_tokens.dart';
-import '../../core/theme.dart';
 import '../../services/device_auth_service.dart';
-import '../../widgets/big_button.dart';
 
 class StartScreen extends ConsumerStatefulWidget {
   const StartScreen({super.key});
@@ -13,8 +11,34 @@ class StartScreen extends ConsumerStatefulWidget {
   ConsumerState<StartScreen> createState() => _StartScreenState();
 }
 
-class _StartScreenState extends ConsumerState<StartScreen> {
+class _StartScreenState extends ConsumerState<StartScreen>
+    with SingleTickerProviderStateMixin {
   bool _busy = false;
+  late final AnimationController _bobCtrl;
+  late final Animation<double> _bobAnim;
+
+  static const _ink = Color(0xFF2D3460);
+  static const _inkSoft = Color(0xFF4A5088);
+  static const _hint = Color(0xFF6B7094);
+  static const _accent = Color(0xFF6C63FF);
+
+  @override
+  void initState() {
+    super.initState();
+    _bobCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _bobAnim = Tween<double>(begin: -8, end: 8).animate(
+      CurvedAnimation(parent: _bobCtrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _bobCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _start() async {
     if (_busy) return;
@@ -33,65 +57,142 @@ class _StartScreenState extends ConsumerState<StartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SeniorBackground(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFD0D8F0), Color(0xFFB8C4E8)],
+          ),
+        ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              children: [
-                const Spacer(flex: 2),
-                Image.asset(
-                  'assets/images/logo.png',
-                  width: 160,
-                  height: 160,
+          child: Column(
+            children: [
+              const Spacer(flex: 2),
+              AnimatedBuilder(
+                animation: _bobAnim,
+                builder: (_, child) => Transform.translate(
+                  offset: Offset(0, _bobAnim.value),
+                  child: child,
+                ),
+                child: Image.asset(
+                  'assets/images/mascot.png',
+                  width: 180,
                   fit: BoxFit.contain,
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  '잘보이네',
-                  style: TextStyle(
-                    fontSize: 56,
-                    fontWeight: FontWeight.w900,
-                    color: JD.ink,
-                    letterSpacing: -2.2,
-                    height: 1.05,
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                '잘보이네',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.w800,
+                  color: _ink,
+                  letterSpacing: -1.4,
+                  height: 1.05,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '어르신을 위한 쉬운 스마트폰',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: _inkSoft,
+                  letterSpacing: -0.4,
+                ),
+              ),
+              const Spacer(flex: 2),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _StartCard(
+                  busy: _busy,
+                  onStart: _start,
+                  accent: _accent,
+                  hintColor: _hint,
+                ),
+              ),
+              const Spacer(flex: 2),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: _GuardianHint(
+                  onTap: () => context.go('/guardian/login'),
+                  ink: _ink,
+                  inkSoft: _inkSoft,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StartCard extends StatelessWidget {
+  final bool busy;
+  final VoidCallback onStart;
+  final Color accent;
+  final Color hintColor;
+  const _StartCard({
+    required this.busy,
+    required this.onStart,
+    required this.accent,
+    required this.hintColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: 80,
+                child: ElevatedButton(
+                  onPressed: busy ? null : onStart,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: const Text(
+                    '→ 시작하기',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.8,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 14),
-                const Text(
-                  '어르신을 위한 쉬운 스마트폰',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: JD.inkSoft,
-                    letterSpacing: -0.4,
-                  ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                '(이 버튼을 누르세요)',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: hintColor,
                 ),
-                const SizedBox(height: 28),
-                BigButton(
-                  label: '시작하기',
-                  icon: Icons.arrow_forward_rounded,
-                  background: JD.cCoralDeep,
-                  shadowBottomColor: const Color(0xFFD9794D),
-                  foreground: Colors.white,
-                  height: 88,
-                  fontSize: 30,
-                  onTap: _busy ? null : _start,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  '(이 버튼을 누르세요)',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: JD.inkMute,
-                  ),
-                ),
-                const Spacer(flex: 3),
-                _GuardianHint(onTap: () => context.go('/guardian/login')),
-                const SizedBox(height: 24),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -101,115 +202,47 @@ class _StartScreenState extends ConsumerState<StartScreen> {
 
 class _GuardianHint extends StatelessWidget {
   final VoidCallback onTap;
-  const _GuardianHint({required this.onTap});
+  final Color ink;
+  final Color inkSoft;
+  const _GuardianHint({
+    required this.onTap,
+    required this.ink,
+    required this.inkSoft,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.6),
-      borderRadius: BorderRadius.circular(24),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: onTap,
-        child: DottedBorder(
-          color: const Color(0xFFC8B89A),
-          radius: 24,
-          strokeWidth: 2.5,
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.favorite_rounded, size: 20, color: JD.inkSoft),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    '가족 및 어르신을 도와주시는 분은 여기를 눌러주세요',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: JD.inkSoft,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ),
-              ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '가족 및 어르신을 도와주시는 분은',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: inkSoft,
+            letterSpacing: -0.3,
+          ),
+        ),
+        const SizedBox(height: 4),
+        InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Text(
+              '여기를 눌러주세요',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: ink,
+                decoration: TextDecoration.underline,
+                decorationColor: ink,
+                letterSpacing: -0.3,
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
-}
-
-class DottedBorder extends StatelessWidget {
-  final Widget child;
-  final Color color;
-  final double radius;
-  final double strokeWidth;
-  const DottedBorder({
-    super.key,
-    required this.child,
-    required this.color,
-    required this.radius,
-    this.strokeWidth = 2,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _DashedRectPainter(
-        color: color,
-        radius: radius,
-        strokeWidth: strokeWidth,
-      ),
-      child: child,
-    );
-  }
-}
-
-class _DashedRectPainter extends CustomPainter {
-  final Color color;
-  final double radius;
-  final double strokeWidth;
-  _DashedRectPainter({
-    required this.color,
-    required this.radius,
-    required this.strokeWidth,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Radius.circular(radius),
-    );
-    final path = Path()..addRRect(rrect);
-    final dashed = _dashPath(path, dashWidth: 8, gapWidth: 6);
-    canvas.drawPath(dashed, paint);
-  }
-
-  Path _dashPath(Path path, {required double dashWidth, required double gapWidth}) {
-    final dest = Path();
-    for (final metric in path.computeMetrics()) {
-      double dist = 0;
-      while (dist < metric.length) {
-        final next = dist + dashWidth;
-        dest.addPath(metric.extractPath(dist, next.clamp(0, metric.length)), Offset.zero);
-        dist = next + gapWidth;
-      }
-    }
-    return dest;
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedRectPainter oldDelegate) =>
-      oldDelegate.color != color ||
-      oldDelegate.radius != radius ||
-      oldDelegate.strokeWidth != strokeWidth;
 }

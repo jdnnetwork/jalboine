@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'design_tokens.dart';
 
 /// 두 가지 톤:
@@ -19,7 +20,50 @@ class JTheme {
   static const guardianCard = JD.gCard;
   static const guardianText = JD.gInk;
 
-  static const _fontFallback = ['Pretendard', 'Apple SD Gothic Neo', 'sans-serif'];
+  /// Pretendard 우선, 없으면 Noto Sans KR (Google Fonts 라이브러리에 등재된 가장 가까운 대체).
+  /// assets/fonts/Pretendard-*.ttf 를 추가하고 pubspec 의 fonts: 섹션에 등록하면
+  /// 자동으로 Pretendard 가 우선 사용됨 (fontFamilyFallback 1순위).
+  static const _kFallback = ['Pretendard', 'Apple SD Gothic Neo', 'sans-serif'];
+
+  static TextStyle _font({
+    required double fontSize,
+    required FontWeight fontWeight,
+    required Color color,
+    double? height,
+    double? letterSpacing,
+  }) {
+    return GoogleFonts.notoSansKr(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      height: height,
+      letterSpacing: letterSpacing,
+    ).copyWith(fontFamilyFallback: _kFallback);
+  }
+
+  /// 앱 전체 기본 텍스트 테마. 본문 w600 (SemiBold), 제목 w800 (ExtraBold).
+  static TextTheme _pretendardTheme(TextTheme base, Color ink, Color inkSoft) {
+    return GoogleFonts.notoSansKrTextTheme(base).copyWith(
+      displayLarge: _font(
+          fontSize: 52, fontWeight: FontWeight.w800, color: ink, height: 1.05, letterSpacing: -1.5),
+      displayMedium: _font(
+          fontSize: 44, fontWeight: FontWeight.w800, color: ink, height: 1.1, letterSpacing: -1.2),
+      headlineLarge: _font(
+          fontSize: 36, fontWeight: FontWeight.w800, color: ink, height: 1.15, letterSpacing: -0.8),
+      headlineMedium: _font(
+          fontSize: 28, fontWeight: FontWeight.w800, color: ink, height: 1.2, letterSpacing: -0.6),
+      titleLarge: _font(
+          fontSize: 24, fontWeight: FontWeight.w800, color: ink, letterSpacing: -0.4),
+      titleMedium: _font(
+          fontSize: 20, fontWeight: FontWeight.w800, color: ink),
+      bodyLarge: _font(
+          fontSize: 18, fontWeight: FontWeight.w600, color: ink),
+      bodyMedium: _font(
+          fontSize: 16, fontWeight: FontWeight.w600, color: inkSoft),
+      labelLarge: _font(
+          fontSize: 24, fontWeight: FontWeight.w800, color: ink),
+    );
+  }
 
   static ThemeData light() {
     final base = ThemeData.light(useMaterial3: true);
@@ -31,28 +75,7 @@ class JTheme {
         primary: JD.cCoralDeep,
         error: JD.cRed,
       ),
-      textTheme: base.textTheme.apply(
-        fontFamilyFallback: _fontFallback,
-      ).copyWith(
-        displayLarge: const TextStyle(
-            fontSize: 52, fontWeight: FontWeight.w900, color: JD.ink, height: 1.05, letterSpacing: -1.5),
-        displayMedium: const TextStyle(
-            fontSize: 44, fontWeight: FontWeight.w900, color: JD.ink, height: 1.1, letterSpacing: -1.2),
-        headlineLarge: const TextStyle(
-            fontSize: 36, fontWeight: FontWeight.w800, color: JD.ink, height: 1.15, letterSpacing: -0.8),
-        headlineMedium: const TextStyle(
-            fontSize: 28, fontWeight: FontWeight.w800, color: JD.ink, height: 1.2, letterSpacing: -0.6),
-        titleLarge: const TextStyle(
-            fontSize: 24, fontWeight: FontWeight.w800, color: JD.ink, letterSpacing: -0.4),
-        titleMedium: const TextStyle(
-            fontSize: 20, fontWeight: FontWeight.w700, color: JD.ink),
-        bodyLarge: const TextStyle(
-            fontSize: 18, fontWeight: FontWeight.w600, color: JD.ink),
-        bodyMedium: const TextStyle(
-            fontSize: 16, fontWeight: FontWeight.w500, color: JD.inkSoft),
-        labelLarge: const TextStyle(
-            fontSize: 24, fontWeight: FontWeight.w800, color: JD.ink),
-      ),
+      textTheme: _pretendardTheme(base.textTheme, JD.ink, JD.inkSoft),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size.fromHeight(64),
@@ -85,9 +108,7 @@ class JTheme {
         primary: JD.gBlue,
       ),
       cardColor: JD.gCard,
-      textTheme: base.textTheme.apply(
-        fontFamilyFallback: _fontFallback,
-      ),
+      textTheme: _pretendardTheme(base.textTheme, JD.gInk, JD.gInkSoft),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: JD.gBlue,
