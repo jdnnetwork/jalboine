@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/device_auth_service.dart';
 
 class StartScreen extends ConsumerStatefulWidget {
@@ -106,12 +107,13 @@ class _StartScreenState extends ConsumerState<StartScreen>
         child: LayoutBuilder(
           builder: (context, c) {
             final h = c.maxHeight;
+            // 3등분: 상단 / 빨강 / 하단 — 빨강이 화면 정중앙
+            final sectionH = h / 3;
             const mascotSize = 200.0;
             const mascotOverlap = 50.0;
-            const bottomGap = 20.0;
-            const bottomLinkH = 96.0; // 가족 안내 + 클릭 영역
-            final redH = h * 0.30;
-            final topH = h - redH - bottomGap - bottomLinkH;
+            final topH = sectionH;
+            final redH = sectionH;
+            final bottomH = h - topH - redH;
             final mascotTop = topH - mascotSize + mascotOverlap;
 
             return Stack(
@@ -133,7 +135,7 @@ class _StartScreenState extends ConsumerState<StartScreen>
                   ),
                 ),
 
-                // 빨강→주황 시작하기 영역
+                // 빨강→주황 시작하기 영역 (화면 세로 정중앙)
                 Positioned(
                   top: topH,
                   left: 0,
@@ -150,12 +152,12 @@ class _StartScreenState extends ConsumerState<StartScreen>
                   ),
                 ),
 
-                // 시작하기 바로 아래 보호자 링크 (간격 20px)
+                // 하단 영역 (가족 도우미 링크)
                 Positioned(
-                  top: topH + redH + bottomGap,
+                  top: topH + redH,
                   left: 0,
                   right: 0,
-                  height: bottomLinkH,
+                  height: bottomH,
                   child: SlideTransition(
                     position: _bottomSlide,
                     child: FadeTransition(
@@ -222,7 +224,7 @@ class _TopText extends StatelessWidget {
           Text(
             '잘보이네',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: GoogleFonts.notoSansKr(
               fontSize: 60,
               fontWeight: FontWeight.w700,
               color: ink,
@@ -234,7 +236,7 @@ class _TopText extends StatelessWidget {
           Text(
             '어르신을 위한 쉬운 스마트폰',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: GoogleFonts.notoSansKr(
               fontSize: 28,
               fontWeight: FontWeight.w500,
               color: inkSoft,
@@ -272,14 +274,14 @@ class _StartArea extends StatelessWidget {
             colors: [gradStart, gradEnd],
           ),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 '→ 시작하기',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: GoogleFonts.notoSansKr(
                   fontSize: 60,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -287,14 +289,14 @@ class _StartArea extends StatelessWidget {
                   height: 1.0,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 '(이 버튼을 누르세요)',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: GoogleFonts.notoSansKr(
                   fontSize: 32,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xCCFFFFFF),
+                  color: const Color(0xCCFFFFFF),
                   letterSpacing: -0.6,
                 ),
               ),
@@ -320,7 +322,7 @@ class _BottomLink extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      alignment: Alignment.topCenter,
+      alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -328,7 +330,7 @@ class _BottomLink extends StatelessWidget {
           Text(
             '가족 및 부모님을 도와주시는 분은',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: GoogleFonts.notoSansKr(
               fontSize: 18,
               fontWeight: FontWeight.w400,
               color: gray,
@@ -344,7 +346,7 @@ class _BottomLink extends StatelessWidget {
               child: Text(
                 '여기를 클릭해주세요',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: GoogleFonts.notoSansKr(
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: ink,

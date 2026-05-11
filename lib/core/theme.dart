@@ -41,7 +41,7 @@ class JTheme {
   }
 
   /// 앱 전체 기본 텍스트 테마. 본문 w500 (Medium), 제목 w700 (Bold).
-  static TextTheme _spoqaTheme(TextTheme base, Color ink, Color inkSoft) {
+  static TextTheme _notoTheme(TextTheme base, Color ink, Color inkSoft) {
     return GoogleFonts.notoSansKrTextTheme(base).copyWith(
       displayLarge: _font(
           fontSize: 52, fontWeight: FontWeight.w700, color: ink, height: 1.05, letterSpacing: -1.5),
@@ -74,7 +74,7 @@ class JTheme {
         primary: JD.cCoralDeep,
         error: JD.cRed,
       ),
-      textTheme: _spoqaTheme(base.textTheme, JD.ink, JD.inkSoft),
+      textTheme: _notoTheme(base.textTheme, JD.ink, JD.inkSoft),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size.fromHeight(64),
@@ -107,7 +107,7 @@ class JTheme {
         primary: JD.gBlue,
       ),
       cardColor: JD.gCard,
-      textTheme: _spoqaTheme(base.textTheme, JD.gInk, JD.gInkSoft),
+      textTheme: _notoTheme(base.textTheme, JD.gInk, JD.gInkSoft),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: JD.gBlue,
