@@ -17,9 +17,9 @@ class _StartScreenState extends ConsumerState<StartScreen>
   late final AnimationController _bobCtrl;
   late final Animation<double> _bobAnim;
 
-  static const _ink = Color(0xFF2D3460);
-  static const _inkSoft = Color(0xFF4A5088);
-  static const _accent = Color(0xFF6C63FF);
+  static const _ink = Color(0xFF3E2723);
+  static const _inkSoft = Color(0xFF5D4037);
+  static const _accent = Color(0xFFFF6B8A);
 
   @override
   void initState() {
@@ -61,7 +61,7 @@ class _StartScreenState extends ConsumerState<StartScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFDDE4F5), Color(0xFFA8B5DC)],
+            colors: [Color(0xFFFFE4EC), Color(0xFFFFD0DC)],
           ),
         ),
         child: SafeArea(
@@ -151,7 +151,7 @@ class _StartCard extends StatelessWidget {
           ),
           child: SizedBox(
             width: double.infinity,
-            height: 200,
+            height: 140,
             child: ElevatedButton(
               onPressed: busy ? null : onStart,
               style: ElevatedButton.styleFrom(
@@ -177,14 +177,14 @@ class _StartCard extends StatelessWidget {
                       height: 1.05,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  SizedBox(height: 8),
                   Text(
                     '이 버튼을 누르세요',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xB3FFFFFF),
+                      color: Color(0xCCFFFFFF),
                       letterSpacing: -0.5,
                     ),
                   ),
