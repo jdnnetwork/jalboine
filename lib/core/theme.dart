@@ -20,10 +20,17 @@ class JTheme {
   static const guardianCard = JD.gCard;
   static const guardianText = JD.gInk;
 
-  /// Pretendard 우선, 없으면 Noto Sans KR (Google Fonts 라이브러리에 등재된 가장 가까운 대체).
-  /// assets/fonts/Pretendard-*.ttf 를 추가하고 pubspec 의 fonts: 섹션에 등록하면
-  /// 자동으로 Pretendard 가 우선 사용됨 (fontFamilyFallback 1순위).
-  static const _kFallback = ['Pretendard', 'Apple SD Gothic Neo', 'sans-serif'];
+  /// Spoqa Han Sans Neo 1순위. 없으면 Pretendard → Noto Sans KR.
+  /// Google Fonts 라이브러리엔 Spoqa Han Sans Neo / Pretendard 가 모두 없어서
+  /// 실제 렌더 폰트는 notoSansKr 이지만, 시스템에 Spoqa가 있거나
+  /// assets/fonts/SpoqaHanSansNeo-*.otf 를 추가하고 pubspec 의 fonts: 섹션에
+  /// 등록하면 자동으로 Spoqa 가 우선 사용된다 (fontFamilyFallback 1순위).
+  static const _kFallback = [
+    'Spoqa Han Sans Neo',
+    'Pretendard',
+    'Apple SD Gothic Neo',
+    'sans-serif',
+  ];
 
   static TextStyle _font({
     required double fontSize,
@@ -41,27 +48,27 @@ class JTheme {
     ).copyWith(fontFamilyFallback: _kFallback);
   }
 
-  /// 앱 전체 기본 텍스트 테마. 본문 w600 (SemiBold), 제목 w800 (ExtraBold).
-  static TextTheme _pretendardTheme(TextTheme base, Color ink, Color inkSoft) {
+  /// 앱 전체 기본 텍스트 테마. 본문 w500 (Medium), 제목 w700 (Bold).
+  static TextTheme _spoqaTheme(TextTheme base, Color ink, Color inkSoft) {
     return GoogleFonts.notoSansKrTextTheme(base).copyWith(
       displayLarge: _font(
-          fontSize: 52, fontWeight: FontWeight.w800, color: ink, height: 1.05, letterSpacing: -1.5),
+          fontSize: 52, fontWeight: FontWeight.w700, color: ink, height: 1.05, letterSpacing: -1.5),
       displayMedium: _font(
-          fontSize: 44, fontWeight: FontWeight.w800, color: ink, height: 1.1, letterSpacing: -1.2),
+          fontSize: 44, fontWeight: FontWeight.w700, color: ink, height: 1.1, letterSpacing: -1.2),
       headlineLarge: _font(
-          fontSize: 36, fontWeight: FontWeight.w800, color: ink, height: 1.15, letterSpacing: -0.8),
+          fontSize: 36, fontWeight: FontWeight.w700, color: ink, height: 1.15, letterSpacing: -0.8),
       headlineMedium: _font(
-          fontSize: 28, fontWeight: FontWeight.w800, color: ink, height: 1.2, letterSpacing: -0.6),
+          fontSize: 28, fontWeight: FontWeight.w700, color: ink, height: 1.2, letterSpacing: -0.6),
       titleLarge: _font(
-          fontSize: 24, fontWeight: FontWeight.w800, color: ink, letterSpacing: -0.4),
+          fontSize: 24, fontWeight: FontWeight.w700, color: ink, letterSpacing: -0.4),
       titleMedium: _font(
-          fontSize: 20, fontWeight: FontWeight.w800, color: ink),
+          fontSize: 20, fontWeight: FontWeight.w700, color: ink),
       bodyLarge: _font(
-          fontSize: 18, fontWeight: FontWeight.w600, color: ink),
+          fontSize: 18, fontWeight: FontWeight.w500, color: ink),
       bodyMedium: _font(
-          fontSize: 16, fontWeight: FontWeight.w600, color: inkSoft),
+          fontSize: 16, fontWeight: FontWeight.w500, color: inkSoft),
       labelLarge: _font(
-          fontSize: 24, fontWeight: FontWeight.w800, color: ink),
+          fontSize: 24, fontWeight: FontWeight.w700, color: ink),
     );
   }
 
@@ -75,7 +82,7 @@ class JTheme {
         primary: JD.cCoralDeep,
         error: JD.cRed,
       ),
-      textTheme: _pretendardTheme(base.textTheme, JD.ink, JD.inkSoft),
+      textTheme: _spoqaTheme(base.textTheme, JD.ink, JD.inkSoft),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size.fromHeight(64),
@@ -108,7 +115,7 @@ class JTheme {
         primary: JD.gBlue,
       ),
       cardColor: JD.gCard,
-      textTheme: _pretendardTheme(base.textTheme, JD.gInk, JD.gInkSoft),
+      textTheme: _spoqaTheme(base.textTheme, JD.gInk, JD.gInkSoft),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: JD.gBlue,
