@@ -20,17 +20,9 @@ class JTheme {
   static const guardianCard = JD.gCard;
   static const guardianText = JD.gInk;
 
-  /// Spoqa Han Sans Neo 1순위. 없으면 Pretendard → Noto Sans KR.
-  /// Google Fonts 라이브러리엔 Spoqa Han Sans Neo / Pretendard 가 모두 없어서
-  /// 실제 렌더 폰트는 notoSansKr 이지만, 시스템에 Spoqa가 있거나
-  /// assets/fonts/SpoqaHanSansNeo-*.otf 를 추가하고 pubspec 의 fonts: 섹션에
-  /// 등록하면 자동으로 Spoqa 가 우선 사용된다 (fontFamilyFallback 1순위).
-  static const _kFallback = [
-    'Spoqa Han Sans Neo',
-    'Pretendard',
-    'Apple SD Gothic Neo',
-    'sans-serif',
-  ];
+  /// Noto Sans KR (google_fonts). 로컬 등록된 한글 폰트가 있더라도 무시하고
+  /// google_fonts 만 사용. 마지막 폴백은 시스템 표준 한글/sans-serif.
+  static const _kFallback = ['Apple SD Gothic Neo', 'sans-serif'];
 
   static TextStyle _font({
     required double fontSize,

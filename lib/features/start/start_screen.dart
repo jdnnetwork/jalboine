@@ -15,8 +15,8 @@ class _StartScreenState extends ConsumerState<StartScreen>
   static const _ink = Color(0xFF3E2723);
   static const _inkSoft = Color(0xFF5D4037);
   static const _gray = Color(0xFF888888);
-  static const _redA = Color(0xFFFF416C);
-  static const _redB = Color(0xFFFF4B2B);
+  static const _gradStart = Color(0xFFD32F2F);
+  static const _gradEnd = Color(0xFFFF6F00);
 
   bool _busy = false;
 
@@ -28,7 +28,7 @@ class _StartScreenState extends ConsumerState<StartScreen>
   late final Animation<Offset> _bottomSlide;
   late final Animation<double> _bottomFade;
 
-  // 마스코트 둥둥 (등장 완료 후 무한 반복)
+  // 마스코트 둥둥 (등장 후 무한 반복)
   late final AnimationController _bobCtrl;
   late final Animation<double> _bobAnim;
   bool _entryDone = false;
@@ -53,20 +53,17 @@ class _StartScreenState extends ConsumerState<StartScreen>
           curve: Interval(a, b, curve: Curves.easeOutCubic),
         );
 
-    // 1단계 빨강: 0 ~ 0.5s → 0 ~ 0.4545 of 1.1s
     _redSlide = Tween<Offset>(
       begin: const Offset(-1, 0),
       end: Offset.zero,
     ).animate(ival(0.0, 0.4545));
 
-    // 2단계 상단: 0.4 ~ 0.9s → 0.3636 ~ 0.8182
     _topSlide = Tween<Offset>(
       begin: const Offset(0, 0.5),
       end: Offset.zero,
     ).animate(ival(0.3636, 0.8182));
     _topFade = ival(0.3636, 0.8182);
 
-    // 3단계 하단: 0.6 ~ 1.1s → 0.5454 ~ 1.0
     _bottomSlide = Tween<Offset>(
       begin: const Offset(0, -0.5),
       end: Offset.zero,
@@ -109,18 +106,19 @@ class _StartScreenState extends ConsumerState<StartScreen>
         child: LayoutBuilder(
           builder: (context, c) {
             final h = c.maxHeight;
-            const mascotSize = 120.0;
-            const mascotOverlap = 30.0; // 빨강 영역 위로 살짝 걸치는 양
-            final redH = h * 0.35;
-            final topH = (h - redH) / 2;
-            final bottomH = h - topH - redH;
+            const mascotSize = 200.0;
+            const mascotOverlap = 50.0;
+            const bottomGap = 20.0;
+            const bottomLinkH = 96.0; // 가족 안내 + 클릭 영역
+            final redH = h * 0.30;
+            final topH = h - redH - bottomGap - bottomLinkH;
+            final mascotTop = topH - mascotSize + mascotOverlap;
 
             return Stack(
               children: [
-                // 흰 배경 (전체)
                 Positioned.fill(child: Container(color: Colors.white)),
 
-                // 상단 영역 — 텍스트만 (마스코트는 별도 Positioned)
+                // 상단 영역 (제목 + 부제)
                 Positioned(
                   top: 0,
                   left: 0,
@@ -130,17 +128,34 @@ class _StartScreenState extends ConsumerState<StartScreen>
                     position: _topSlide,
                     child: FadeTransition(
                       opacity: _topFade,
-                      child: _TopText(ink: _ink, inkSoft: _inkSoft),
+                      child: const _TopText(ink: _ink, inkSoft: _inkSoft),
                     ),
                   ),
                 ),
 
-                // 하단 영역 — 보호자 링크
+                // 빨강→주황 시작하기 영역
                 Positioned(
-                  top: topH + redH,
+                  top: topH,
                   left: 0,
                   right: 0,
-                  height: bottomH,
+                  height: redH,
+                  child: SlideTransition(
+                    position: _redSlide,
+                    child: _StartArea(
+                      busy: _busy,
+                      onTap: _start,
+                      gradStart: _gradStart,
+                      gradEnd: _gradEnd,
+                    ),
+                  ),
+                ),
+
+                // 시작하기 바로 아래 보호자 링크 (간격 20px)
+                Positioned(
+                  top: topH + redH + bottomGap,
+                  left: 0,
+                  right: 0,
+                  height: bottomLinkH,
                   child: SlideTransition(
                     position: _bottomSlide,
                     child: FadeTransition(
@@ -154,26 +169,9 @@ class _StartScreenState extends ConsumerState<StartScreen>
                   ),
                 ),
 
-                // 중간 빨강 영역 — 시작하기 버튼 (왼쪽에서 슬라이드)
+                // 마스코트 — 빨강 영역 위로 살짝 걸침
                 Positioned(
-                  top: topH,
-                  left: 0,
-                  right: 0,
-                  height: redH,
-                  child: SlideTransition(
-                    position: _redSlide,
-                    child: _StartArea(
-                      busy: _busy,
-                      onTap: _start,
-                      gradA: _redA,
-                      gradB: _redB,
-                    ),
-                  ),
-                ),
-
-                // 마스코트 — 빨강 영역 위로 mascotOverlap 만큼 걸침
-                Positioned(
-                  top: topH - mascotSize + mascotOverlap,
+                  top: mascotTop,
                   left: 0,
                   right: 0,
                   height: mascotSize,
@@ -216,7 +214,7 @@ class _TopText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 36, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 40, 20, 16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -225,22 +223,22 @@ class _TopText extends StatelessWidget {
             '잘보이네',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 48,
+              fontSize: 60,
               fontWeight: FontWeight.w700,
               color: ink,
-              letterSpacing: -1.6,
-              height: 1.05,
+              letterSpacing: -2.0,
+              height: 1.0,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             '어르신을 위한 쉬운 스마트폰',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 28,
               fontWeight: FontWeight.w500,
               color: inkSoft,
-              letterSpacing: -0.4,
+              letterSpacing: -0.5,
             ),
           ),
         ],
@@ -252,13 +250,13 @@ class _TopText extends StatelessWidget {
 class _StartArea extends StatelessWidget {
   final bool busy;
   final VoidCallback onTap;
-  final Color gradA;
-  final Color gradB;
+  final Color gradStart;
+  final Color gradEnd;
   const _StartArea({
     required this.busy,
     required this.onTap,
-    required this.gradA,
-    required this.gradB,
+    required this.gradStart,
+    required this.gradEnd,
   });
 
   @override
@@ -271,7 +269,7 @@ class _StartArea extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [gradA, gradB],
+            colors: [gradStart, gradEnd],
           ),
         ),
         child: const Center(
@@ -282,11 +280,11 @@ class _StartArea extends StatelessWidget {
                 '→ 시작하기',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 52,
+                  fontSize: 60,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
-                  letterSpacing: -1.6,
-                  height: 1.05,
+                  letterSpacing: -2.0,
+                  height: 1.0,
                 ),
               ),
               SizedBox(height: 8),
@@ -294,10 +292,10 @@ class _StartArea extends StatelessWidget {
                 '(이 버튼을 누르세요)',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 32,
                   fontWeight: FontWeight.w400,
                   color: Color(0xCCFFFFFF),
-                  letterSpacing: -0.5,
+                  letterSpacing: -0.6,
                 ),
               ),
             ],
@@ -322,7 +320,7 @@ class _BottomLink extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      alignment: Alignment.center,
+      alignment: Alignment.topCenter,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -331,7 +329,7 @@ class _BottomLink extends StatelessWidget {
             '가족 및 부모님을 도와주시는 분은',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.w400,
               color: gray,
               letterSpacing: -0.3,
@@ -347,12 +345,12 @@ class _BottomLink extends StatelessWidget {
                 '여기를 클릭해주세요',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 22,
                   fontWeight: FontWeight.w500,
                   color: ink,
                   decoration: TextDecoration.underline,
                   decorationColor: ink,
-                  letterSpacing: -0.3,
+                  letterSpacing: -0.4,
                 ),
               ),
             ),
