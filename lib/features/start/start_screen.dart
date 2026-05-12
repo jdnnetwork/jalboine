@@ -15,9 +15,9 @@ class _StartScreenState extends ConsumerState<StartScreen>
     with SingleTickerProviderStateMixin {
   static const _bg = Color(0xFFF5F2EC);
   static const _ink = Color(0xFF0A1A38);
-  static const _orange = Color(0xFFFF6F1F);
-  static const _orangeLight = Color(0xFFFFA050);
-  static const _orangeDark = Color(0xFFD94F00);
+  static const _orange = Color(0xFFD35400);
+  static const _orangeLight = Color(0xFFEE8232);
+  static const _orangeDark = Color(0xFF9E3F00);
   static const _heart = Color(0xFFFF5E89);
 
   bool _busy = false;
