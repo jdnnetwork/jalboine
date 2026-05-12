@@ -12,76 +12,57 @@ class StartScreen extends ConsumerStatefulWidget {
 }
 
 class _StartScreenState extends ConsumerState<StartScreen>
-    with TickerProviderStateMixin {
-  static const _ink = Color(0xFF3E2723);
-  static const _inkSoft = Color(0xFF5D4037);
-  static const _gray = Color(0xFF888888);
-  static const _gradStart = Color(0xFFD32F2F);
-  static const _gradEnd = Color(0xFFFF6F00);
+    with SingleTickerProviderStateMixin {
+  static const _bg = Color(0xFFF5F2EC);
+  static const _ink = Color(0xFF0A1A38);
+  static const _orange = Color(0xFFFF6F1F);
+  static const _orangeLight = Color(0xFFFFA050);
+  static const _orangeDark = Color(0xFFD94F00);
+  static const _heart = Color(0xFFFF5E89);
 
   bool _busy = false;
 
-  // 등장 애니메이션 (총 1.1초)
-  late final AnimationController _entryCtrl;
-  late final Animation<Offset> _redSlide;
+  late final AnimationController _ctrl;
+  late final Animation<double> _fade;
   late final Animation<Offset> _topSlide;
-  late final Animation<double> _topFade;
   late final Animation<Offset> _bottomSlide;
-  late final Animation<double> _bottomFade;
-
-  // 마스코트 둥둥 (등장 후 무한 반복)
-  late final AnimationController _bobCtrl;
-  late final Animation<double> _bobAnim;
-  bool _entryDone = false;
+  late final Animation<double> _btnScale;
 
   @override
   void initState() {
     super.initState();
-    _entryCtrl = AnimationController(
+    _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1100),
+      duration: const Duration(milliseconds: 700),
     );
-    _bobCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
+    _fade = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
     );
-    _bobAnim = Tween<double>(begin: -6, end: 6).animate(
-      CurvedAnimation(parent: _bobCtrl, curve: Curves.easeInOut),
-    );
-
-    Animation<double> ival(double a, double b) => CurvedAnimation(
-          parent: _entryCtrl,
-          curve: Interval(a, b, curve: Curves.easeOutCubic),
-        );
-
-    _redSlide = Tween<Offset>(
-      begin: const Offset(-1, 0),
-      end: Offset.zero,
-    ).animate(ival(0.0, 0.4545));
-
     _topSlide = Tween<Offset>(
-      begin: const Offset(0, 0.5),
+      begin: const Offset(0, -0.2),
       end: Offset.zero,
-    ).animate(ival(0.3636, 0.8182));
-    _topFade = ival(0.3636, 0.8182);
-
+    ).animate(CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
+    ));
     _bottomSlide = Tween<Offset>(
-      begin: const Offset(0, -0.5),
+      begin: const Offset(0, 0.3),
       end: Offset.zero,
-    ).animate(ival(0.5454, 1.0));
-    _bottomFade = ival(0.5454, 1.0);
-
-    _entryCtrl.forward().whenComplete(() {
-      if (!mounted) return;
-      setState(() => _entryDone = true);
-      _bobCtrl.repeat(reverse: true);
-    });
+    ).animate(CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
+    ));
+    _btnScale = Tween<double>(begin: 0.85, end: 1.0).animate(CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.15, 1.0, curve: Curves.easeOutBack),
+    ));
+    _ctrl.forward();
   }
 
   @override
   void dispose() {
-    _entryCtrl.dispose();
-    _bobCtrl.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
@@ -102,202 +83,181 @@ class _StartScreenState extends ConsumerState<StartScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _bg,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, c) {
-            final h = c.maxHeight;
-            // 3등분: 상단 / 빨강 / 하단 — 빨강이 화면 정중앙
-            final sectionH = h / 3;
-            const mascotSize = 200.0;
-            const mascotOverlap = 50.0;
-            final topH = sectionH;
-            final redH = sectionH;
-            final bottomH = h - topH - redH;
-            final mascotTop = topH - mascotSize + mascotOverlap;
-
-            return Stack(
-              children: [
-                Positioned.fill(child: Container(color: Colors.white)),
-
-                // 상단 영역 (제목 + 부제)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: topH,
-                  child: SlideTransition(
-                    position: _topSlide,
-                    child: FadeTransition(
-                      opacity: _topFade,
-                      child: const _TopText(ink: _ink, inkSoft: _inkSoft),
-                    ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 12),
+              SlideTransition(
+                position: _topSlide,
+                child: FadeTransition(
+                  opacity: _fade,
+                  child: const _Heading(ink: _ink, accent: _orange),
+                ),
+              ),
+              const Spacer(flex: 2),
+              FadeTransition(
+                opacity: _fade,
+                child: ScaleTransition(
+                  scale: _btnScale,
+                  child: _StartButton(
+                    busy: _busy,
+                    onTap: _start,
                   ),
                 ),
-
-                // 빨강→주황 시작하기 영역 (화면 세로 정중앙)
-                Positioned(
-                  top: topH,
-                  left: 0,
-                  right: 0,
-                  height: redH,
-                  child: SlideTransition(
-                    position: _redSlide,
-                    child: _StartArea(
-                      busy: _busy,
-                      onTap: _start,
-                      gradStart: _gradStart,
-                      gradEnd: _gradEnd,
-                    ),
+              ),
+              const Spacer(flex: 2),
+              SlideTransition(
+                position: _bottomSlide,
+                child: FadeTransition(
+                  opacity: _fade,
+                  child: _GuardianCard(
+                    onTap: () => context.go('/guardian/login'),
                   ),
                 ),
-
-                // 하단 영역 (가족 도우미 링크)
-                Positioned(
-                  top: topH + redH,
-                  left: 0,
-                  right: 0,
-                  height: bottomH,
-                  child: SlideTransition(
-                    position: _bottomSlide,
-                    child: FadeTransition(
-                      opacity: _bottomFade,
-                      child: _BottomLink(
-                        onTap: () => context.go('/guardian/login'),
-                        ink: _ink,
-                        gray: _gray,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // 마스코트 — 빨강 영역 위로 살짝 걸침
-                Positioned(
-                  top: mascotTop,
-                  left: 0,
-                  right: 0,
-                  height: mascotSize,
-                  child: SlideTransition(
-                    position: _topSlide,
-                    child: FadeTransition(
-                      opacity: _topFade,
-                      child: AnimatedBuilder(
-                        animation: _bobAnim,
-                        builder: (_, child) => Transform.translate(
-                          offset:
-                              Offset(0, _entryDone ? _bobAnim.value : 0),
-                          child: child,
-                        ),
-                        child: Center(
-                          child: Image.asset(
-                            'assets/images/mascot.png',
-                            width: mascotSize,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _TopText extends StatelessWidget {
+class _Heading extends StatelessWidget {
   final Color ink;
-  final Color inkSoft;
-  const _TopText({required this.ink, required this.inkSoft});
+  final Color accent;
+  const _Heading({required this.ink, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 40, 20, 16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            '잘보이네',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.notoSansKr(
-              fontSize: 60,
-              fontWeight: FontWeight.w700,
-              color: ink,
-              letterSpacing: -2.0,
-              height: 1.0,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          '잘보이네',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.notoSansKr(
+            fontSize: 84,
+            fontWeight: FontWeight.w900,
+            color: ink,
+            letterSpacing: -3.2,
+            height: 1.0,
           ),
-          const SizedBox(height: 10),
-          Text(
-            '어르신을 위한 쉬운 스마트폰',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.notoSansKr(
-              fontSize: 28,
-              fontWeight: FontWeight.w500,
-              color: inkSoft,
-              letterSpacing: -0.5,
-            ),
+        ),
+        const SizedBox(height: 18),
+        Text(
+          '어르신을 위한',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.notoSansKr(
+            fontSize: 34,
+            fontWeight: FontWeight.w800,
+            color: ink,
+            letterSpacing: -1.3,
+            height: 1.1,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '쉬운 스마트폰',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.notoSansKr(
+            fontSize: 34,
+            fontWeight: FontWeight.w800,
+            color: accent,
+            letterSpacing: -1.3,
+            height: 1.1,
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _StartArea extends StatelessWidget {
+class _StartButton extends StatelessWidget {
   final bool busy;
   final VoidCallback onTap;
-  final Color gradStart;
-  final Color gradEnd;
-  const _StartArea({
-    required this.busy,
-    required this.onTap,
-    required this.gradStart,
-    required this.gradEnd,
-  });
+  const _StartButton({required this.busy, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: busy ? null : onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [gradStart, gradEnd],
+      child: AspectRatio(
+        aspectRatio: 1.05,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                _StartScreenState._orangeLight,
+                _StartScreenState._orange,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(40),
+            boxShadow: [
+              // 두꺼운 아래 그림자 — 3D 입체감
+              BoxShadow(
+                color: _StartScreenState._orangeDark.withValues(alpha: 0.65),
+                offset: const Offset(0, 14),
+                blurRadius: 0,
+              ),
+              // 부드러운 외곽 글로우
+              BoxShadow(
+                color: _StartScreenState._orange.withValues(alpha: 0.35),
+                offset: const Offset(0, 22),
+                blurRadius: 36,
+              ),
+            ],
           ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Stack(
             children: [
-              Text(
-                '→ 시작하기',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 60,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: -2.0,
-                  height: 1.0,
+              // 상단 하이라이트 (글로시 효과)
+              Positioned(
+                top: 16,
+                left: 24,
+                right: 24,
+                height: 28,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                '(이 버튼을 누르세요)',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w400,
-                  color: const Color(0xCCFFFFFF),
-                  letterSpacing: -0.6,
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '시작하기',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.notoSansKr(
+                        fontSize: 78,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -3.0,
+                        height: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      '이 버튼을 누르세요',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.notoSansKr(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.92),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -308,56 +268,83 @@ class _StartArea extends StatelessWidget {
   }
 }
 
-class _BottomLink extends StatelessWidget {
+class _GuardianCard extends StatelessWidget {
   final VoidCallback onTap;
-  final Color ink;
-  final Color gray;
-  const _BottomLink({
-    required this.onTap,
-    required this.ink,
-    required this.gray,
-  });
+  const _GuardianCard({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Material(
       color: Colors.white,
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '가족 및 부모님을 도와주시는 분은',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.notoSansKr(
-              fontSize: 18,
-              fontWeight: FontWeight.w400,
-              color: gray,
-              letterSpacing: -0.3,
-            ),
+      borderRadius: BorderRadius.circular(24),
+      elevation: 0,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                offset: const Offset(0, 6),
+                blurRadius: 18,
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          InkWell(
-            onTap: onTap,
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Text(
-                '여기를 클릭해주세요',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                  color: ink,
-                  decoration: TextDecoration.underline,
-                  decorationColor: ink,
-                  letterSpacing: -0.4,
+          child: Row(
+            children: [
+              const Icon(
+                Icons.favorite_rounded,
+                color: _StartScreenState._heart,
+                size: 44,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '가족 및 어르신을',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.notoSansKr(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _StartScreenState._ink,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '도와주시는 분은',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.notoSansKr(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _StartScreenState._ink,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '여기를 눌러주세요',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.notoSansKr(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: _StartScreenState._orange,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
