@@ -48,16 +48,28 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     refreshListenable: GoRouterRefreshStream(sb.auth.onAuthStateChange),
     redirect: (context, state) {
-      // 온보딩을 마친 익명(피보호자) 세션은 / 진입 시 곧장 /home 으로.
-      // 그렇지 않으면 앱이 기본 런처로 떠도 매번 StartScreen 으로 돌아가버린다.
-      if (state.matchedLocation == '/') {
-        final user = sb.auth.currentUser;
-        if (user != null &&
-            user.isAnonymous &&
-            OnboardingStatus.isComplete) {
-          return '/home';
-        }
-      }
+      // 온보딩을 마친 익명(피보호자) 세션은 시작/온보딩 경로에 진입 시 곧장 /home 으로.
+      // 앱이 기본 런처로 떠도 매번 StartScreen 으로 돌아가는 무한 루프 방지.
+      final path = state.uri.path;
+      final isOnboardingPath = path == '/' ||
+          path == '/audio-guide-ask' ||
+          path == '/font-size' ||
+          path == '/age' ||
+          path.startsWith('/onboarding');
+      if (!isOnboardingPath) return null;
+
+      final user = sb.auth.currentUser;
+      final shouldGoHome = user != null &&
+          user.isAnonymous &&
+          OnboardingStatus.isComplete;
+      // ignore: avoid_print
+      print(
+        'jalboine route: path=$path '
+        'anon=${user?.isAnonymous ?? false} '
+        'done=${OnboardingStatus.isComplete} '
+        '→ ${shouldGoHome ? "/home" : "stay"}',
+      );
+      if (shouldGoHome) return '/home';
       return null;
     },
     routes: [

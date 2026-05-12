@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/device_auth_service.dart';
+import '../../services/onboarding_status.dart';
 
 class StartScreen extends ConsumerStatefulWidget {
   const StartScreen({super.key});
@@ -31,6 +33,9 @@ class _StartScreenState extends ConsumerState<StartScreen>
   @override
   void initState() {
     super.initState();
+    // 라우터 redirect 가 어떤 이유로든 안 통한 경우의 백업 안전망.
+    // 이미 온보딩을 마친 익명 세션이면 시작 화면을 띄우지 말고 곧장 /home 으로.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeSkipToHome());
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -64,6 +69,20 @@ class _StartScreenState extends ConsumerState<StartScreen>
   void dispose() {
     _ctrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _maybeSkipToHome() async {
+    if (!mounted) return;
+    if (!OnboardingStatus.isLoaded) {
+      await OnboardingStatus.load();
+      if (!mounted) return;
+    }
+    if (!OnboardingStatus.isComplete) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || !user.isAnonymous) return;
+    // ignore: avoid_print
+    print('jalboine start: onboarding done + anon → skip to /home');
+    context.go('/home');
   }
 
   Future<void> _start() async {
