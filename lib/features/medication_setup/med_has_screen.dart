@@ -14,7 +14,7 @@ const _yesEnd = Color(0xFFFF5A8A);
 const _noBg = Color(0xFFF0F0F0);
 const _noFg = Color(0xFF2D2D2D);
 
-const _audioAsset = 'assets/audio/medicine_q.wav';
+const _audioAsset = 'assets/audio/medicine_guide.wav';
 
 /// 화면 7-1: 약 복용 여부.
 class MedHasScreen extends ConsumerStatefulWidget {
