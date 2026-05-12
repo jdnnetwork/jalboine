@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/device_auth_service.dart';
 import '../../services/onboarding_status.dart';
@@ -15,54 +14,29 @@ class StartScreen extends ConsumerStatefulWidget {
 
 class _StartScreenState extends ConsumerState<StartScreen>
     with SingleTickerProviderStateMixin {
-  static const _bg = Color(0xFFF5F2EC);
-  static const _ink = Color(0xFF0A1A38);
-  static const _orange = Color(0xFFD35400);
-  static const _orangeLight = Color(0xFFEE8232);
-  static const _orangeDark = Color(0xFF9E3F00);
-  static const _heart = Color(0xFFFF5E89);
-
   bool _busy = false;
 
   late final AnimationController _ctrl;
-  late final Animation<double> _fade;
-  late final Animation<Offset> _topSlide;
-  late final Animation<Offset> _bottomSlide;
-  late final Animation<double> _btnScale;
+  late final Animation<double> _floatAnim;
+  late final Animation<double> _scaleAnim;
 
   @override
   void initState() {
     super.initState();
-    // 라우터 redirect 가 어떤 이유로든 안 통한 경우의 백업 안전망.
-    // 이미 온보딩을 마친 익명 세션이면 시작 화면을 띄우지 말고 곧장 /home 으로.
+    // 라우터 redirect 안전망 — 이미 온보딩 마친 익명 세션이면 곧장 /home 으로.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeSkipToHome());
+
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(seconds: 7),
+    )..repeat(reverse: true);
+
+    _floatAnim = Tween<double>(begin: 0, end: -7).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
     );
-    _fade = CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+    _scaleAnim = Tween<double>(begin: 1.0, end: 1.018).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
     );
-    _topSlide = Tween<Offset>(
-      begin: const Offset(0, -0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
-    ));
-    _bottomSlide = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
-    ));
-    _btnScale = Tween<double>(begin: 0.85, end: 1.0).animate(CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.15, 1.0, curve: Curves.easeOutBack),
-    ));
-    _ctrl.forward();
   }
 
   @override
@@ -102,268 +76,251 @@ class _StartScreenState extends ConsumerState<StartScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 12),
-              SlideTransition(
-                position: _topSlide,
-                child: FadeTransition(
-                  opacity: _fade,
-                  child: const _Heading(ink: _ink, accent: _orange),
-                ),
-              ),
-              const Spacer(flex: 2),
-              FadeTransition(
-                opacity: _fade,
-                child: ScaleTransition(
-                  scale: _btnScale,
-                  child: _StartButton(
-                    busy: _busy,
-                    onTap: _start,
-                  ),
-                ),
-              ),
-              const Spacer(flex: 2),
-              SlideTransition(
-                position: _bottomSlide,
-                child: FadeTransition(
-                  opacity: _fade,
-                  child: _GuardianCard(
-                    onTap: () => context.go('/guardian/login'),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Heading extends StatelessWidget {
-  final Color ink;
-  final Color accent;
-  const _Heading({required this.ink, required this.accent});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          '잘보이네',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.notoSansKr(
-            fontSize: 84,
-            fontWeight: FontWeight.w900,
-            color: ink,
-            letterSpacing: -3.2,
-            height: 1.0,
-          ),
-        ),
-        const SizedBox(height: 18),
-        Text(
-          '어르신을 위한',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.notoSansKr(
-            fontSize: 34,
-            fontWeight: FontWeight.w800,
-            color: ink,
-            letterSpacing: -1.3,
-            height: 1.1,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '쉬운 스마트폰',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.notoSansKr(
-            fontSize: 34,
-            fontWeight: FontWeight.w800,
-            color: accent,
-            letterSpacing: -1.3,
-            height: 1.1,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StartButton extends StatelessWidget {
-  final bool busy;
-  final VoidCallback onTap;
-  const _StartButton({required this.busy, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: busy ? null : onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AspectRatio(
-        aspectRatio: 1.05,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                _StartScreenState._orangeLight,
-                _StartScreenState._orange,
-              ],
+      backgroundColor: const Color(0xFFF7F2EB),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background.png',
+              fit: BoxFit.cover,
             ),
-            borderRadius: BorderRadius.circular(40),
-            boxShadow: [
-              // 두꺼운 아래 그림자 — 3D 입체감
-              BoxShadow(
-                color: _StartScreenState._orangeDark.withValues(alpha: 0.65),
-                offset: const Offset(0, 14),
-                blurRadius: 0,
-              ),
-              // 부드러운 외곽 글로우
-              BoxShadow(
-                color: _StartScreenState._orange.withValues(alpha: 0.35),
-                offset: const Offset(0, 22),
-                blurRadius: 36,
-              ),
-            ],
           ),
-          child: Stack(
-            children: [
-              // 상단 하이라이트 (글로시 효과)
-              Positioned(
-                top: 16,
-                left: 24,
-                right: 24,
-                height: 28,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(22),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 26,
+                vertical: 20,
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 22),
+
+                  // TOP
+                  Column(
+                    children: [
+                      const Icon(
+                        Icons.favorite_rounded,
+                        color: Color(0xFFFF7A3D),
+                        size: 42,
+                      ),
+                      const SizedBox(height: 22),
+                      const Text(
+                        '어르신을 위한',
+                        style: TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF3A2D26),
+                          letterSpacing: -1.2,
+                          height: 1.3,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      RichText(
+                        text: const TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '쉬운 ',
+                              style: TextStyle(
+                                fontSize: 62,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFFF07A34),
+                                letterSpacing: -3,
+                                height: 1,
+                              ),
+                            ),
+                            TextSpan(
+                              text: '스마트폰',
+                              style: TextStyle(
+                                fontSize: 62,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF2E241F),
+                                letterSpacing: -3,
+                                height: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '시작하기',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.notoSansKr(
-                        fontSize: 78,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: -3.0,
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      '이 버튼을 누르세요',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.notoSansKr(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.92),
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
-class _GuardianCard extends StatelessWidget {
-  final VoidCallback onTap;
-  const _GuardianCard({required this.onTap});
+                  const Spacer(),
 
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(24),
-      elevation: 0,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                offset: const Offset(0, 6),
-                blurRadius: 18,
+                  // FLOATING START BUTTON
+                  AnimatedBuilder(
+                    animation: _ctrl,
+                    builder: (_, child) {
+                      return Transform.translate(
+                        offset: Offset(0, _floatAnim.value),
+                        child: Transform.scale(
+                          scale: _scaleAnim.value,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: GestureDetector(
+                      onTap: _busy ? null : _start,
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        width: 360,
+                        height: 360,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFFFFB869),
+                              Color(0xFFE9782E),
+                            ],
+                          ),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.92),
+                            width: 5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0x33E9782E),
+                              blurRadius: 42,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 24),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.touch_app_rounded,
+                              color: Colors.white,
+                              size: 84,
+                            ),
+                            const SizedBox(height: 18),
+                            const Text(
+                              '시작하기',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 72,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -4,
+                                height: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 26),
+                            Container(
+                              width: 220,
+                              height: 2,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                            const SizedBox(height: 26),
+                            const Text(
+                              '눌러서 시작하세요',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 42,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -2,
+                                height: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const Spacer(),
+
+                  // BOTTOM CARD — 보호자 진입
+                  GestureDetector(
+                    onTap: () => context.go('/guardian/login'),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 26,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.74),
+                        borderRadius: BorderRadius.circular(34),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.55),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 18,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 86,
+                            height: 86,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFFFFF1EA),
+                            ),
+                            child: const Icon(
+                              Icons.favorite_rounded,
+                              color: Color(0xFFFF7A55),
+                              size: 46,
+                            ),
+                          ),
+                          const SizedBox(width: 22),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '가족 및 어르신을\n도와주시는 분은',
+                                  style: TextStyle(
+                                    color: Color(0xFF3A2D26),
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.4,
+                                    letterSpacing: -1,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: const [
+                                    Text(
+                                      '여기를 눌러주세요',
+                                      style: TextStyle(
+                                        color: Color(0xFFF07A34),
+                                        fontSize: 34,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -1.5,
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      color: Color(0xFFF07A34),
+                                      size: 18,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+                ],
               ),
-            ],
+            ),
           ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.favorite_rounded,
-                color: _StartScreenState._heart,
-                size: 44,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      '가족 및 어르신을',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.notoSansKr(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: _StartScreenState._ink,
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '도와주시는 분은',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.notoSansKr(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: _StartScreenState._ink,
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '여기를 눌러주세요',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.notoSansKr(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: _StartScreenState._orange,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
