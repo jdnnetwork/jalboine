@@ -22,9 +22,9 @@ class FcmService {
   Map<String, dynamic>? _pendingTap;
 
   /// main 에서 1회 호출. Firebase.initializeApp 후에.
+  /// 권한 요청은 하지 않는다 — /onboarding/notification-guide 에서만 요청.
   Future<void> init() async {
     final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission();
     FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
 
     // 포그라운드 수신 → 로컬 알림으로 표시

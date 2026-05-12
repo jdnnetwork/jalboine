@@ -1,5 +1,4 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -28,7 +27,7 @@ class NotificationService {
       init,
       onDidReceiveNotificationResponse: _onTap,
     );
-    await Permission.notification.request();
+    // POST_NOTIFICATIONS 런타임 권한은 /onboarding/notification-guide 에서만 요청.
     _ready = true;
   }
 
