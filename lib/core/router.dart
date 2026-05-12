@@ -21,6 +21,7 @@ import '../features/medication_setup/med_count_screen.dart';
 import '../features/medication_setup/med_slot_screen.dart';
 import '../features/medication_setup/med_hour_screen.dart';
 import '../features/medication_setup/med_confirm_screen.dart';
+import '../features/medication_setup/notification_permission_screen.dart';
 import '../features/pairing/family_branch_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/emergency/emergency_screen.dart';
@@ -116,6 +117,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               .where((t) => t.isNotEmpty)
               .toList(),
         ),
+      ),
+      GoRoute(
+        path: '/permission/notification',
+        builder: (_, s) {
+          final v = s.uri.queryParameters['med_alarm'] ?? 'false';
+          return NotificationPermissionScreen(medicineAlarm: v == 'true');
+        },
       ),
       GoRoute(path: '/setup-done', builder: (_, _) => const SetupDoneScreen()),
       GoRoute(path: '/family', builder: (_, _) => const FamilyBranchScreen()),

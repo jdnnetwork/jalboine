@@ -50,7 +50,7 @@ class _MedHasScreenState extends ConsumerState<MedHasScreen> {
       if (yes) {
         context.go('/med/count');
       } else {
-        context.go('/setup-done');
+        context.go('/permission/notification?med_alarm=false');
       }
     } catch (e) {
       if (!mounted) return;
