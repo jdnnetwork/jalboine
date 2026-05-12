@@ -125,64 +125,48 @@ class _FontSizeScreenState extends ConsumerState<FontSizeScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          child: LayoutBuilder(
-            builder: (context, c) {
-              final h = c.maxHeight;
-              final topH = h * 0.55;
-              final bottomH = h - topH;
-              return Column(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            children: [
+              const Spacer(flex: 1),
+              _MascotBubble(
+                level: _level,
+                bubbleBorder: _bubbleBorder,
+                bubbleText: _bubbleText,
+              ),
+              const Spacer(flex: 1),
+              Row(
                 children: [
-                  SizedBox(
-                    height: topH,
-                    child: _MascotBubble(
-                      level: _level,
-                      bubbleBorder: _bubbleBorder,
-                      bubbleText: _bubbleText,
+                  Expanded(
+                    child: _GradientButton(
+                      label: '네',
+                      gradStart: _accentRed,
+                      gradEnd: _accentRedLight,
+                      fg: Colors.white,
+                      onTap: _onYes,
+                      enabled: !_busy,
                     ),
                   ),
-                  SizedBox(
-                    height: bottomH,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _GradientButton(
-                                label: '네',
-                                gradStart: _accentRed,
-                                gradEnd: _accentRedLight,
-                                fg: Colors.white,
-                                onTap: _onYes,
-                                enabled: !_busy,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _SolidButton(
-                                label: '아니요',
-                                bg: _noBg,
-                                fg: _noFg,
-                                onTap: _onNo,
-                                enabled: !_busy,
-                              ),
-                            ),
-                          ],
-                        ),
-                        _AudioToggle(
-                          guideOn: guideOn,
-                          gradStart: _orangeStart,
-                          gradEnd: _orangeEnd,
-                          onTap: _onToggleAudio,
-                        ),
-                      ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SolidButton(
+                      label: '아니요',
+                      bg: _noBg,
+                      fg: _noFg,
+                      onTap: _onNo,
+                      enabled: !_busy,
                     ),
                   ),
                 ],
-              );
-            },
+              ),
+              const SizedBox(height: 20),
+              _AudioToggle(
+                guideOn: guideOn,
+                gradStart: _orangeStart,
+                gradEnd: _orangeEnd,
+                onTap: _onToggleAudio,
+              ),
+            ],
           ),
         ),
       ),
@@ -203,22 +187,21 @@ class _MascotBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, c) {
-        const mascotSize = 160.0;
-        const mascotOverlap = 50.0; // 말풍선 위로 걸치는 양
-        final bubbleW = c.maxWidth * 0.85;
-        final bubbleTop = mascotSize - mascotOverlap;
-        return Stack(
-          children: [
-            // 말풍선 (마스코트 아래에서 시작)
-            Positioned(
-              top: bubbleTop,
-              left: (c.maxWidth - bubbleW) / 2,
+    const mascotSize = 160.0;
+    const mascotOverlap = 50.0;
+    final bubbleW = MediaQuery.of(context).size.width * 0.90;
+    return SizedBox(
+      width: double.infinity,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: mascotSize - mascotOverlap),
+            child: SizedBox(
               width: bubbleW,
               child: Column(
                 children: [
-                  // 위 삼각형 꼬리
                   CustomPaint(
                     size: const Size(22, 12),
                     painter: _TailPainter(
@@ -227,6 +210,7 @@ class _MascotBubble extends StatelessWidget {
                     ),
                   ),
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 24),
                     decoration: BoxDecoration(
@@ -239,23 +223,14 @@ class _MascotBubble extends StatelessWidget {
                 ],
               ),
             ),
-            // 마스코트 (위에 걸침)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: mascotSize,
-              child: Center(
-                child: Image.asset(
-                  'assets/images/mascot.png',
-                  width: mascotSize,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+          Image.asset(
+            'assets/images/mascot.png',
+            width: mascotSize,
+            fit: BoxFit.contain,
+          ),
+        ],
+      ),
     );
   }
 }

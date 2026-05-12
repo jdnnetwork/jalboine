@@ -73,47 +73,32 @@ class _AudioGuideAskScreenState extends ConsumerState<AudioGuideAskScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 8),
+              const Spacer(flex: 1),
               const _MascotBubble(
                 bubbleBorder: _bubbleBorder,
                 bubbleText: _bubbleText,
                 accent: _accentRed,
               ),
-              const Spacer(flex: 2),
-              Column(
-                children: [
-                  Text(
-                    '음성으로',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.notoSansKr(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w800,
-                      color: _ink,
-                      letterSpacing: -1.6,
-                      height: 1.1,
-                    ),
-                  ),
-                  Text(
-                    '안내를 드릴까요?',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.notoSansKr(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w800,
-                      color: _ink,
-                      letterSpacing: -1.6,
-                      height: 1.1,
-                    ),
-                  ),
-                ],
+              const Spacer(flex: 1),
+              Text(
+                '음성으로\n안내를 드릴까요?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.notoSansKr(
+                  fontSize: 48,
+                  fontWeight: FontWeight.w800,
+                  color: _ink,
+                  letterSpacing: -1.8,
+                  height: 1.15,
+                ),
               ),
-              const Spacer(flex: 3),
+              const Spacer(flex: 1),
               if (_showHint)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
                     '음성 안내가 필요하시면, 언제든 음성 안내를 켤 수 있어요',
                     textAlign: TextAlign.center,
@@ -175,84 +160,140 @@ class _MascotBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Image.asset(
-          'assets/images/mascot.png',
-          width: 90,
-          fit: BoxFit.contain,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: bubbleBorder, width: 2),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '어르신이 ',
-                        style: GoogleFonts.notoSansKr(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w400,
-                          color: bubbleText,
-                          height: 1.45,
-                        ),
-                      ),
-                      TextSpan(
-                        text: '쉽게',
-                        style: GoogleFonts.notoSansKr(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: accent,
-                          height: 1.45,
-                        ),
-                      ),
-                      TextSpan(
-                        text: ' 스마트폰을',
-                        style: GoogleFonts.notoSansKr(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w400,
-                          color: bubbleText,
-                          height: 1.45,
-                        ),
-                      ),
-                    ],
+    const mascotSize = 140.0;
+    const mascotOverlap = 40.0;
+    final bubbleW = MediaQuery.of(context).size.width * 0.90;
+    return SizedBox(
+      width: double.infinity,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: mascotSize - mascotOverlap),
+            child: SizedBox(
+              width: bubbleW,
+              child: Column(
+                children: [
+                  CustomPaint(
+                    size: const Size(22, 12),
+                    painter: _TailPainter(
+                      border: bubbleBorder,
+                      fill: Colors.white,
+                    ),
                   ),
-                ),
-                Text(
-                  '사용할 수 있도록 도와드릴게요',
-                  style: GoogleFonts.notoSansKr(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w400,
-                    color: bubbleText,
-                    height: 1.45,
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: bubbleBorder, width: 2),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text.rich(
+                          textAlign: TextAlign.center,
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '어르신이 ',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                  color: bubbleText,
+                                  height: 1.4,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '쉽게',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                  color: accent,
+                                  height: 1.4,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' 스마트폰을',
+                                style: GoogleFonts.notoSansKr(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                  color: bubbleText,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          '사용할 수 있도록 도와드릴게요',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.notoSansKr(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: bubbleText,
+                            height: 1.4,
+                          ),
+                        ),
+                        Text(
+                          '차근 차근 따라오세요',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.notoSansKr(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: bubbleText,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Text(
-                  '차근 차근 따라오세요',
-                  style: GoogleFonts.notoSansKr(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w400,
-                    color: bubbleText,
-                    height: 1.45,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+          Image.asset(
+            'assets/images/mascot.png',
+            width: mascotSize,
+            fit: BoxFit.contain,
+          ),
+        ],
+      ),
     );
   }
+}
+
+class _TailPainter extends CustomPainter {
+  final Color border;
+  final Color fill;
+  _TailPainter({required this.border, required this.fill});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final apex = Offset(size.width / 2, 0);
+    final left = Offset(0, size.height);
+    final right = Offset(size.width, size.height);
+
+    final fillPath = Path()
+      ..moveTo(apex.dx, apex.dy)
+      ..lineTo(left.dx, left.dy)
+      ..lineTo(right.dx, right.dy)
+      ..close();
+    canvas.drawPath(fillPath, Paint()..color = fill);
+
+    final stroke = Paint()
+      ..color = border
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(apex, left, stroke);
+    canvas.drawLine(apex, right, stroke);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TailPainter old) =>
+      old.border != border || old.fill != fill;
 }
 
 class _GradientButton extends StatelessWidget {

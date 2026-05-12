@@ -54,60 +54,44 @@ class QuestionScreen extends ConsumerWidget {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          child: LayoutBuilder(
-            builder: (context, c) {
-              final h = c.maxHeight;
-              final topH = h * 0.45;
-              final bottomH = h - topH;
-              return Column(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            children: [
+              const Spacer(flex: 1),
+              _MascotBubble(
+                question: question,
+                bubbleBorder: _bubbleBorder,
+                ink: _ink,
+              ),
+              const Spacer(flex: 1),
+              Row(
                 children: [
-                  SizedBox(
-                    height: topH,
-                    child: _MascotBubble(
-                      question: question,
-                      bubbleBorder: _bubbleBorder,
-                      ink: _ink,
+                  Expanded(
+                    child: _AnswerButton(
+                      label: '네',
+                      gradStart: _accentRed,
+                      gradEnd: _accentRedLight,
+                      fg: Colors.white,
+                      onTap: () => _tap(true),
                     ),
                   ),
-                  SizedBox(
-                    height: bottomH,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _AnswerButton(
-                                label: '네',
-                                gradStart: _accentRed,
-                                gradEnd: _accentRedLight,
-                                fg: Colors.white,
-                                onTap: () => _tap(true),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _AnswerButton(
-                                label: '아니요',
-                                bg: _noBg,
-                                fg: _noFg,
-                                onTap: () => _tap(false),
-                              ),
-                            ),
-                          ],
-                        ),
-                        _AudioToggle(
-                          guideOn: guideOn,
-                          onTap: () => _onToggleAudio(ref),
-                        ),
-                      ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _AnswerButton(
+                      label: '아니요',
+                      bg: _noBg,
+                      fg: _noFg,
+                      onTap: () => _tap(false),
                     ),
                   ),
                 ],
-              );
-            },
+              ),
+              const SizedBox(height: 20),
+              _AudioToggle(
+                guideOn: guideOn,
+                onTap: () => _onToggleAudio(ref),
+              ),
+            ],
           ),
         ),
       ),
@@ -128,18 +112,19 @@ class _MascotBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, c) {
-        const mascotSize = 140.0;
-        const mascotOverlap = 40.0;
-        final bubbleW = c.maxWidth * 0.85;
-        final bubbleTop = mascotSize - mascotOverlap;
-        return Stack(
-          children: [
-            // 말풍선
-            Positioned(
-              top: bubbleTop,
-              left: (c.maxWidth - bubbleW) / 2,
+    const mascotSize = 140.0;
+    const mascotOverlap = 40.0;
+    final bubbleW = MediaQuery.of(context).size.width * 0.90;
+    return SizedBox(
+      width: double.infinity,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          // 말풍선 (마스코트 아래에서 시작, 비포지셔닝 → Stack 크기 결정)
+          Padding(
+            padding: const EdgeInsets.only(top: mascotSize - mascotOverlap),
+            child: SizedBox(
               width: bubbleW,
               child: Column(
                 children: [
@@ -151,6 +136,7 @@ class _MascotBubble extends StatelessWidget {
                     ),
                   ),
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 24),
                     decoration: BoxDecoration(
@@ -173,23 +159,15 @@ class _MascotBubble extends StatelessWidget {
                 ],
               ),
             ),
-            // 마스코트 (말풍선 위 걸침)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: mascotSize,
-              child: Center(
-                child: Image.asset(
-                  'assets/images/mascot.png',
-                  width: mascotSize,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+          // 마스코트 (말풍선 위 걸침)
+          Image.asset(
+            'assets/images/mascot.png',
+            width: mascotSize,
+            fit: BoxFit.contain,
+          ),
+        ],
+      ),
     );
   }
 }
