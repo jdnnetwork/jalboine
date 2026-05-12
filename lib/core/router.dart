@@ -24,6 +24,7 @@ import '../features/medication_setup/med_confirm_screen.dart';
 import '../features/medication_setup/notification_permission_screen.dart';
 import '../features/pairing/family_branch_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/home/more_screen.dart';
 import '../features/emergency/emergency_screen.dart';
 import '../features/messages/senior_messages_screen.dart';
 import '../features/safety/call_permission_screen.dart';
@@ -128,6 +129,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/setup-done', builder: (_, _) => const SetupDoneScreen()),
       GoRoute(path: '/family', builder: (_, _) => const FamilyBranchScreen()),
       GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+      GoRoute(path: '/more', builder: (_, _) => const MoreScreen()),
       GoRoute(path: '/emergency', builder: (_, _) => const EmergencyScreen()),
       GoRoute(
           path: '/messages',

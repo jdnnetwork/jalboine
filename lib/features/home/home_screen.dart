@@ -3,21 +3,91 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/design_tokens.dart';
-import '../../core/theme.dart';
 import '../../services/audio_service.dart';
-import '../../services/launcher_service.dart';
-import '../../services/onboarding_settings_service.dart';
-import '../../services/realtime_service.dart';
 import '../../services/foreground_sync_service.dart';
+import '../../services/launcher_service.dart';
 import '../../services/location_service.dart';
 import '../../services/messages_service.dart';
+import '../../services/onboarding_settings_service.dart';
+import '../../services/realtime_service.dart';
 import '../../services/sound_mode_service.dart';
 import '../../services/status_sync_service.dart';
 import '../../services/unknown_call_detector.dart';
-import '../pairing/family_connect_dialog.dart';
-import 'app_tile.dart';
+
+const _bg = Color(0xFFFBF6EE);
+const _ink = Color(0xFF1A1A2E);
+const _inkSoft = Color(0xFF5C5347);
+const _accentPink = Color(0xFFFF6B8A);
+const _emphasisRed = Color(0xFFD32F2F);
+const _btnGray = Color(0xFFF5F5F5);
+const _btnGrayBorder = Color(0xFFCCCCCC);
+const _btnGrayInk = Color(0xFF3E2723);
+const _btnPinkBg = Color(0xFFFFF0F0);
+
+const _kCachedAppsKey = 'cached_enabled_apps';
+
+class _AppDef {
+  final String label;
+  final IconData icon;
+  final Color startColor;
+  final Color endColor;
+  final String audioAsset;
+  const _AppDef({
+    required this.label,
+    required this.icon,
+    required this.startColor,
+    required this.endColor,
+    required this.audioAsset,
+  });
+}
+
+const _appDefs = <String, _AppDef>{
+  'phone': _AppDef(
+    label: '전화',
+    icon: Icons.phone,
+    startColor: Color(0xFF66BB6A),
+    endColor: Color(0xFF2E7D32),
+    audioAsset: 'assets/audio/phone.wav',
+  ),
+  'message': _AppDef(
+    label: '메시지',
+    icon: Icons.chat_bubble_rounded,
+    startColor: Color(0xFF42A5F5),
+    endColor: Color(0xFF1565C0),
+    audioAsset: 'assets/audio/message.wav',
+  ),
+  'kakao': _AppDef(
+    label: '카카오톡',
+    icon: Icons.chat_rounded,
+    startColor: Color(0xFFFFCA28),
+    endColor: Color(0xFFF57F17),
+    audioAsset: 'assets/audio/kakao.wav',
+  ),
+  'youtube': _AppDef(
+    label: '유튜브',
+    icon: Icons.play_arrow_rounded,
+    startColor: Color(0xFFEF5350),
+    endColor: Color(0xFFC62828),
+    audioAsset: 'assets/audio/youtube.wav',
+  ),
+  'camera': _AppDef(
+    label: '카메라',
+    icon: Icons.camera_alt_rounded,
+    startColor: Color(0xFFAB47BC),
+    endColor: Color(0xFF6A1B9A),
+    audioAsset: 'assets/audio/camera.wav',
+  ),
+  'gallery': _AppDef(
+    label: '갤러리',
+    icon: Icons.photo_library_rounded,
+    startColor: Color(0xFFEC407A),
+    endColor: Color(0xFFAD1457),
+    audioAsset: 'assets/audio/gallery.wav',
+  ),
+};
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -32,19 +102,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Timer? _callCheckTimer;
   bool _checkingCall = false;
   bool _alertOpen = false;
+  List<String>? _cachedApps;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadCachedApps();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // 화면이 뜰 때마다 즉시 동기화 + 3분 주기 시작
       StatusSyncService.instance.pushOnce();
       StatusSyncService.instance.startPeriodic();
       await OnboardingSettingsService.loadFromProfiles(ref);
-      // 백그라운드 Foreground Service도 살아있게
       await ForegroundSyncService.instance.startIfNeeded();
     });
+  }
+
+  Future<void> _loadCachedApps() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = prefs.getStringList(_kCachedAppsKey);
+      if (list != null && mounted) {
+        setState(() => _cachedApps = list);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveCachedApps(List<String> apps) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_kCachedAppsKey, apps);
+    } catch (_) {}
   }
 
   @override
@@ -68,7 +155,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
-  /// senior_settings.unknown_call_detection==true 면 3분 주기 폴링.
   void _maybeStartCallChecker() {
     final s = ref.read(seniorSettingsProvider).value;
     if (s == null || !s.unknownCallDetection) {
@@ -102,7 +188,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
-  /// 보호자가 토글을 ON 으로 바꾼 직후 권한 안내 화면 띄우기.
   Future<void> _maybePromptCallPermission() async {
     final has = await UnknownCallDetector.instance.hasPermissions();
     if (has || !mounted) {
@@ -116,7 +201,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _maybeStartCallChecker();
   }
 
-  /// 보호자가 위치 추적 토글 ON 시 권한 안내 화면.
   Future<void> _maybePromptLocationPermission() async {
     final fine = await LocationService.instance.hasFinePermission();
     final bg = await LocationService.instance.hasBackgroundPermission();
@@ -130,7 +214,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _alertOpen = false;
   }
 
-  /// 보호자가 emergency_sound=true 보낸 직후 강제 울리기 화면.
   Future<void> _onEmergencySound() async {
     if (_alertOpen || !mounted) return;
     _alertOpen = true;
@@ -140,6 +223,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _onCardTap(String key) {
     final voiceMode = ref.read(voiceGuideModeProvider);
+    final def = _appDefs[key];
     if (!voiceMode) {
       LauncherService.launchApp(key);
       return;
@@ -149,18 +233,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       LauncherService.launchApp(key);
     } else {
       setState(() => _primedKey = key);
-      final meta = JConst.apps[key];
-      if (meta != null) AudioService.instance.play(meta.audio);
+      if (def != null) AudioService.instance.play(def.audioAsset);
     }
-  }
-
-  Future<void> _exitConfirm(BuildContext context) async {
-    final ok1 = await _ask(context, '기본 홈 화면으로 돌아가시겠어요?');
-    if (!ok1 || !context.mounted) return;
-    final ok2 = await _ask(
-        context, '정말로 돌아가시겠어요?\n잘보이네 앱은 유지됩니다');
-    if (!ok2 || !context.mounted) return;
-    SystemNavigator.pop();
   }
 
   void _showSoundToast(BuildContext context, String label) {
@@ -170,11 +244,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ..showSnackBar(SnackBar(
         duration: const Duration(milliseconds: 1200),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: JD.ink,
+        backgroundColor: _ink,
         content: Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: GoogleFonts.notoSansKr(
             fontSize: 18,
             fontWeight: FontWeight.w800,
             color: Colors.white,
@@ -183,78 +257,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ));
   }
 
-  Future<bool> _ask(BuildContext context, String text) async {
-    final r = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        backgroundColor: Colors.white,
-        content: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: JD.ink,
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text(
-              '아니요',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: JD.inkSoft,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              '네',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: JD.cCoralDeep,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    return r == true;
-  }
-
   String get _greeting {
     final h = DateTime.now().hour;
-    if (h < 11) return '좋은 아침이에요';
-    if (h < 17) return '좋은 오후에요';
-    return '편안한 저녁이에요';
+    if (h < 11) return '좋은 아침이에요, 할머니';
+    if (h < 17) return '좋은 오후예요, 할머니';
+    return '편안한 저녁이에요, 할머니';
   }
 
   String get _dateStr {
     final n = DateTime.now();
     const wd = ['월', '화', '수', '목', '금', '토', '일'];
-    return '${n.month}월 ${n.day}일 ${wd[n.weekday - 1]}요일';
-  }
-
-  String get _timeStr {
-    final n = DateTime.now();
-    final ampm = n.hour < 12 ? '오전' : '오후';
-    final h = n.hour == 0 ? 12 : (n.hour > 12 ? n.hour - 12 : n.hour);
-    final m = n.minute.toString().padLeft(2, '0');
-    return '$ampm $h:$m';
+    return '${n.year}년 ${n.month}월 ${n.day}일 ${wd[n.weekday - 1]}요일';
   }
 
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(seniorSettingsProvider);
     final mode = ref.watch(soundModeProvider);
-    // 보호자가 모르는 번호 감지 토글을 ON 으로 바꾸면 권한 안내 자동 표시
+    final partner = ref.watch(partnerIdProvider);
+    final partnerConnected = partner.maybeWhen(
+      data: (v) => v != null,
+      orElse: () => false,
+    );
+
     ref.listen(seniorSettingsProvider, (prev, next) {
       final prevOn = prev?.value?.unknownCallDetection ?? false;
       final nextOn = next.value?.unknownCallDetection ?? false;
@@ -267,173 +292,494 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         _maybeStartCallChecker();
       }
     });
-    // 위치 추적 토글 ON 으로 바뀌면 위치 권한 안내 화면 띄우기
     ref.listen(seniorSettingsProvider, (prev, next) {
       final prevOn = prev?.value?.locationTracking ?? false;
       final nextOn = next.value?.locationTracking ?? false;
       if (!prevOn && nextOn) _maybePromptLocationPermission();
     });
-    // 보호자가 emergency_sound=true 보내면 강제 울리기 화면으로 이동
     ref.listen(seniorSettingsProvider, (prev, next) {
       final prevOn = prev?.value?.emergencySound ?? false;
       final nextOn = next.value?.emergencySound ?? false;
       if (!prevOn && nextOn) _onEmergencySound();
     });
+    ref.listen(seniorSettingsProvider, (_, next) {
+      final apps = next.value?.enabledApps;
+      if (apps != null) _saveCachedApps(apps);
+    });
+
+    // 캐시된 앱이 있으면 즉시 표시, 없으면 supabase 로딩 대기.
+    final apps = settings.value?.enabledApps ?? _cachedApps ?? const <String>[];
+    final effectiveApps = apps.take(6).toList();
+
     return Scaffold(
-      body: SeniorBackground(
-        child: SafeArea(
-          child: settings.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('$e')),
-            data: (s) {
-              final apps = s.enabledApps.take(8).toList();
-              return Stack(
-                children: [
-                  Column(
-                    children: [
-                      // Greeting + sound toggle
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _dateStr,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: JD.inkMute,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _greeting,
-                                    style: const TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w900,
-                                      color: JD.ink,
-                                      letterSpacing: -0.8,
-                                      height: 1.2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            _SoundModeButton(
-                              mode: mode,
-                              onTap: () async {
-                                final next = mode.next;
-                                _showSoundToast(context, next.toastLabel);
-                                AudioService.instance.play(next.audioAsset);
-                                await persistSoundMode(ref, next);
-                                await SoundModeService.instance.apply(next);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      // Weather/time card
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: _WeatherCard(timeStr: _timeStr),
-                      ),
-                      const SizedBox(height: 14),
-                      // 가족에게 카드 (가족 연결돼 있을 때만)
-                      Consumer(
-                        builder: (_, ref, _) {
-                          final partner = ref.watch(partnerIdProvider);
-                          final pid = partner.maybeWhen(
-                            data: (v) => v,
-                            orElse: () => null,
-                          );
-                          if (pid == null) return const SizedBox.shrink();
-                          return Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-                            child: _FamilyMessageCard(
-                              onTap: () => context.push('/messages'),
-                            ),
-                          );
-                        },
-                      ),
-                      // Apps grid (long press to enter guardian PIN)
-                      Expanded(
-                        child: GestureDetector(
-                          onLongPress: () => context.push('/guardian/pin'),
-                          child: apps.isEmpty
-                              ? const Center(
-                                  child: Text(
-                                    '앱이 없어요',
-                                    style: TextStyle(
-                                        fontSize: 22, color: JD.inkSoft),
-                                  ),
-                                )
-                              : Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                      16, 4, 16, 8),
-                                  child: LayoutBuilder(
-                                    builder: (context, c) {
-                                      const cross = 2;
-                                      const mainSpacing = 12.0;
-                                      const crossSpacing = 12.0;
-                                      final rows =
-                                          (apps.length / cross).ceil();
-                                      final tileW = (c.maxWidth -
-                                              (cross - 1) * crossSpacing) /
-                                          cross;
-                                      final tileH = (c.maxHeight -
-                                              (rows - 1) * mainSpacing) /
-                                          rows;
-                                      final ratio = tileH <= 0
-                                          ? 1.0
-                                          : tileW / tileH;
-                                      return GridView.builder(
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        gridDelegate:
-                                            SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: cross,
-                                          mainAxisSpacing: mainSpacing,
-                                          crossAxisSpacing: crossSpacing,
-                                          childAspectRatio: ratio,
-                                        ),
-                                        itemCount: apps.length,
-                                        itemBuilder: (_, i) => AppTile(
-                                          appKey: apps[i],
-                                          onTap: () => _onCardTap(apps[i]),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                        ),
-                      ),
-                      // SOS bar
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                        child: _SosButton(onTap: () => context.push('/emergency')),
-                      ),
-                    ],
+      backgroundColor: _bg,
+      body: SafeArea(
+        child: settings.when(
+          loading: () => _cachedApps == null
+              ? const Center(child: CircularProgressIndicator())
+              : _buildHome(effectiveApps, mode, partnerConnected),
+          error: (e, _) => Center(
+            child: Text(
+              '$e',
+              style: GoogleFonts.notoSansKr(color: _inkSoft, fontSize: 16),
+            ),
+          ),
+          data: (_) => _buildHome(effectiveApps, mode, partnerConnected),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHome(
+    List<String> apps,
+    SoundMode mode,
+    bool partnerConnected,
+  ) {
+    return GestureDetector(
+      onLongPress: () => context.push('/guardian/pin'),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Column(
+          children: [
+            _Header(
+              dateStr: _dateStr,
+              greeting: _greeting,
+              mode: mode,
+              onSoundTap: () async {
+                final next = mode.next;
+                _showSoundToast(context, next.toastLabel);
+                AudioService.instance.play(next.audioAsset);
+                await persistSoundMode(ref, next);
+                await SoundModeService.instance.apply(next);
+              },
+            ),
+            const SizedBox(height: 14),
+            Expanded(
+              child: _CardArea(
+                apps: apps,
+                primedKey: _primedKey,
+                onAppTap: _onCardTap,
+                onMoreTap: () => context.push('/more'),
+              ),
+            ),
+            const SizedBox(height: 10),
+            _BottomArea(
+              count: apps.length,
+              partnerConnected: partnerConnected,
+              onMore: () => context.push('/more'),
+              onFamily: () => context.push('/family'),
+              onSos: () => context.push('/emergency'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  final String dateStr;
+  final String greeting;
+  final SoundMode mode;
+  final VoidCallback onSoundTap;
+  const _Header({
+    required this.dateStr,
+    required this.greeting,
+    required this.mode,
+    required this.onSoundTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  dateStr,
+                  style: GoogleFonts.notoSansKr(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: _ink,
+                    letterSpacing: -0.4,
+                    height: 1.0,
                   ),
-                  Positioned(
-                    bottom: 96,
-                    right: 16,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const FamilyConnectButton(),
-                        const SizedBox(width: 8),
-                        _ExitButton(onTap: () => _exitConfirm(context)),
-                      ],
-                    ),
+                ),
+              ),
+              const Icon(Icons.wb_sunny_rounded,
+                  color: Color(0xFFFFB300), size: 24),
+              const SizedBox(width: 6),
+              Text(
+                // TODO(weather): 실제 날씨 API 연동 — 현재 하드코딩
+                '맑음 23°C',
+                style: GoogleFonts.notoSansKr(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: _ink,
+                  letterSpacing: -0.4,
+                  height: 1.0,
+                ),
+              ),
+              const SizedBox(width: 10),
+              _SoundModeButton(mode: mode, onTap: onSoundTap),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            greeting,
+            style: GoogleFonts.notoSansKr(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              color: _ink,
+              letterSpacing: -1.2,
+              height: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CardArea extends StatelessWidget {
+  final List<String> apps;
+  final String? primedKey;
+  final void Function(String) onAppTap;
+  final VoidCallback onMoreTap;
+  const _CardArea({
+    required this.apps,
+    required this.primedKey,
+    required this.onAppTap,
+    required this.onMoreTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final n = apps.length;
+    if (n == 0) {
+      return _MoreCard(onTap: onMoreTap);
+    }
+    if (n == 1) {
+      return Column(
+        children: [
+          Expanded(child: _appCard(apps[0])),
+          const SizedBox(height: 12),
+          Expanded(child: _MoreCard(onTap: onMoreTap)),
+        ],
+      );
+    }
+    if (n == 2 || n == 3) {
+      return Column(
+        children: [
+          for (var i = 0; i < n; i++) ...[
+            Expanded(child: _appCard(apps[i])),
+            if (i < n - 1) const SizedBox(height: 12),
+          ],
+        ],
+      );
+    }
+    if (n == 4) {
+      return Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[0])),
+                const SizedBox(width: 12),
+                Expanded(child: _appCard(apps[1])),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[2])),
+                const SizedBox(width: 12),
+                Expanded(child: _appCard(apps[3])),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    if (n == 5) {
+      return Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[0])),
+                const SizedBox(width: 12),
+                Expanded(child: _appCard(apps[1])),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[2])),
+                const SizedBox(width: 12),
+                Expanded(child: _appCard(apps[3])),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[4])),
+                const SizedBox(width: 12),
+                Expanded(child: _MoreCard(onTap: onMoreTap)),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    // 6
+    return Column(
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(child: _appCard(apps[0])),
+              const SizedBox(width: 12),
+              Expanded(child: _appCard(apps[1])),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(child: _appCard(apps[2])),
+              const SizedBox(width: 12),
+              Expanded(child: _appCard(apps[3])),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(child: _appCard(apps[4])),
+              const SizedBox(width: 12),
+              Expanded(child: _appCard(apps[5])),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _appCard(String key) {
+    final def = _appDefs[key];
+    if (def == null) return const SizedBox.shrink();
+    return _AppCard(
+      def: def,
+      primed: primedKey == key,
+      onTap: () => onAppTap(key),
+    );
+  }
+}
+
+class _AppCard extends StatelessWidget {
+  final _AppDef def;
+  final bool primed;
+  final VoidCallback onTap;
+  const _AppCard({
+    required this.def,
+    required this.primed,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [def.startColor, def.endColor],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: primed
+              ? Border.all(color: Colors.white, width: 4)
+              : null,
+          boxShadow: [
+            BoxShadow(
+              color: def.endColor.withValues(alpha: 0.40),
+              offset: const Offset(0, 6),
+              blurRadius: 14,
+            ),
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.15),
+              offset: const Offset(0, -2),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, c) {
+            final compact = c.maxHeight < 120;
+            final iconSize = compact ? 48.0 : 64.0;
+            final fontSize = compact ? 26.0 : 32.0;
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(def.icon, color: Colors.white, size: iconSize),
+                SizedBox(height: compact ? 6 : 10),
+                Text(
+                  def.label,
+                  style: GoogleFonts.notoSansKr(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -1.0,
+                    height: 1.0,
                   ),
-                ],
-              );
-            },
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _MoreCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _MoreCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _btnGrayBorder, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              offset: const Offset(0, 4),
+              blurRadius: 10,
+            ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, c) {
+            final compact = c.maxHeight < 120;
+            final iconSize = compact ? 44.0 : 56.0;
+            final fontSize = compact ? 24.0 : 28.0;
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.apps_rounded, color: _btnGrayInk, size: iconSize),
+                SizedBox(height: compact ? 6 : 10),
+                Text(
+                  '다른 화면 보기',
+                  style: GoogleFonts.notoSansKr(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w900,
+                    color: _btnGrayInk,
+                    letterSpacing: -0.8,
+                    height: 1.0,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomArea extends StatelessWidget {
+  final int count;
+  final bool partnerConnected;
+  final VoidCallback onMore;
+  final VoidCallback onFamily;
+  final VoidCallback onSos;
+  const _BottomArea({
+    required this.count,
+    required this.partnerConnected,
+    required this.onMore,
+    required this.onFamily,
+    required this.onSos,
+  });
+
+  bool get _moreInGrid => count == 0 || count == 5;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (_moreInGrid)
+          _FamilyButton(
+            partnerConnected: partnerConnected,
+            onTap: onFamily,
+          )
+        else
+          Row(
+            children: [
+              Expanded(child: _MoreButton(onTap: onMore)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _FamilyButton(
+                  partnerConnected: partnerConnected,
+                  onTap: onFamily,
+                ),
+              ),
+            ],
+          ),
+        const SizedBox(height: 8),
+        _SosButton(onTap: onSos),
+      ],
+    );
+  }
+}
+
+class _MoreButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _MoreButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: _btnGray,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _btnGrayBorder, width: 1.5),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '다른 화면 보기',
+          style: GoogleFonts.notoSansKr(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: _btnGrayInk,
+            letterSpacing: -0.6,
+            height: 1.0,
           ),
         ),
       ),
@@ -441,59 +787,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 }
 
-class _WeatherCard extends StatelessWidget {
-  final String timeStr;
-  const _WeatherCard({required this.timeStr});
+class _FamilyButton extends StatelessWidget {
+  final bool partnerConnected;
+  final VoidCallback onTap;
+  const _FamilyButton({
+    required this.partnerConnected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment(-1, -1),
-          end: Alignment(1, 1),
-          colors: [Color(0xFFFFE9C2), Color(0xFFFFD49A)],
-        ),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-              color: const Color(0xFFE89923).withValues(alpha: 0.18),
-              offset: const Offset(0, 6),
-              blurRadius: 16),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.wb_sunny_rounded, color: Color(0xFFE89923), size: 36),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            height: 56,
+            decoration: BoxDecoration(
+              color: _btnPinkBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _accentPink, width: 1.5),
+            ),
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const Icon(Icons.favorite, color: _emphasisRed, size: 22),
+                const SizedBox(width: 8),
                 Text(
-                  timeStr,
-                  style: const TextStyle(
+                  '가족 연결',
+                  style: GoogleFonts.notoSansKr(
                     fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: JD.ink,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  '오늘은 맑아요',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: JD.inkSoft,
+                    fontWeight: FontWeight.w800,
+                    color: _emphasisRed,
+                    letterSpacing: -0.6,
+                    height: 1.0,
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+        if (!partnerConnected)
+          Positioned(
+            top: -4,
+            right: -4,
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: _emphasisRed,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -506,7 +857,8 @@ class _SosButton extends StatefulWidget {
   State<_SosButton> createState() => _SosButtonState();
 }
 
-class _SosButtonState extends State<_SosButton> with SingleTickerProviderStateMixin {
+class _SosButtonState extends State<_SosButton>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
 
   @override
@@ -530,22 +882,17 @@ class _SosButtonState extends State<_SosButton> with SingleTickerProviderStateMi
       animation: _ctrl,
       builder: (_, _) {
         final t = Curves.easeInOut.transform(_ctrl.value);
-        final pulse = 0.0 + 8.0 * t;
+        final pulse = 8.0 * t;
         return Container(
-          height: 84,
+          height: 64,
           decoration: BoxDecoration(
-            color: JD.cRed,
-            borderRadius: BorderRadius.circular(28),
+            color: _emphasisRed,
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
-              const BoxShadow(
-                color: Color(0x40B41E1E),
-                offset: Offset(0, 8),
-                blurRadius: 0,
-              ),
               BoxShadow(
-                color: JD.cRedLight.withValues(alpha: 0.30 + 0.15 * t),
-                offset: const Offset(0, 14),
-                blurRadius: 30,
+                color: _emphasisRed.withValues(alpha: 0.30 + 0.15 * t),
+                offset: const Offset(0, 8),
+                blurRadius: 20,
                 spreadRadius: pulse,
               ),
             ],
@@ -553,29 +900,28 @@ class _SosButtonState extends State<_SosButton> with SingleTickerProviderStateMi
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(16),
               onTap: () {
                 HapticFeedback.heavyImpact();
                 widget.onTap();
               },
-              child: const Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.warning_amber_rounded,
-                        color: Colors.white, size: 30),
-                    SizedBox(width: 12),
-                    Text(
-                      '긴급 전화 SOS',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: -0.6,
-                      ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      color: Colors.white, size: 30),
+                  const SizedBox(width: 12),
+                  Text(
+                    '긴급 전화 SOS',
+                    style: GoogleFonts.notoSansKr(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: -0.8,
+                      height: 1.0,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -599,113 +945,22 @@ class _SoundModeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           HapticFeedback.lightImpact();
           onTap();
         },
         child: Ink(
-          width: 64,
-          height: 64,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: JD.shadowCard,
           ),
-          child: Icon(_icon, color: JD.ink, size: 32),
-        ),
-      ),
-    );
-  }
-}
-
-class _FamilyMessageCard extends StatelessWidget {
-  final VoidCallback onTap;
-  const _FamilyMessageCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Ink(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment(-1, -1),
-              end: Alignment(1, 1),
-              colors: [Color(0xFFFFB7CE), Color(0xFFFF8FB1)],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFC44569).withValues(alpha: 0.25),
-                offset: const Offset(0, 8),
-                blurRadius: 18,
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.28),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(Icons.favorite_rounded,
-                    color: Colors.white, size: 28),
-              ),
-              const SizedBox(width: 14),
-              const Expanded(
-                child: Text(
-                  '가족에게',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -0.6,
-                  ),
-                ),
-              ),
-              const Icon(Icons.arrow_forward_rounded,
-                  color: Colors.white, size: 26),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ExitButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _ExitButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.85),
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Text(
-            '원래 화면',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: JD.inkSoft,
-            ),
-          ),
+          child: Icon(_icon, color: _ink, size: 24),
         ),
       ),
     );
