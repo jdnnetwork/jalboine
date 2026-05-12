@@ -459,9 +459,9 @@ class _CardArea extends StatelessWidget {
     if (n == 1) {
       return Column(
         children: [
-          Expanded(child: _appCard(apps[0])),
+          Expanded(child: _appCard(apps[0], banner: true)),
           const SizedBox(height: 12),
-          Expanded(child: _MoreCard(onTap: onMoreTap)),
+          Expanded(child: _MoreCard(banner: true, onTap: onMoreTap)),
         ],
       );
     }
@@ -469,7 +469,7 @@ class _CardArea extends StatelessWidget {
       return Column(
         children: [
           for (var i = 0; i < n; i++) ...[
-            Expanded(child: _appCard(apps[i])),
+            Expanded(child: _appCard(apps[i], banner: true)),
             if (i < n - 1) const SizedBox(height: 12),
           ],
         ],
@@ -571,12 +571,13 @@ class _CardArea extends StatelessWidget {
     );
   }
 
-  Widget _appCard(String key) {
+  Widget _appCard(String key, {bool banner = false}) {
     final def = _appDefs[key];
     if (def == null) return const SizedBox.shrink();
     return _AppCard(
       def: def,
       primed: primedKey == key,
+      banner: banner,
       onTap: () => onAppTap(key),
     );
   }
@@ -585,10 +586,12 @@ class _CardArea extends StatelessWidget {
 class _AppCard extends StatelessWidget {
   final _AppDef def;
   final bool primed;
+  final bool banner;
   final VoidCallback onTap;
   const _AppCard({
     required this.def,
     required this.primed,
+    required this.banner,
     required this.onTap,
   });
 
@@ -622,38 +625,67 @@ class _AppCard extends StatelessWidget {
             ),
           ],
         ),
-        child: LayoutBuilder(
-          builder: (context, c) {
-            final compact = c.maxHeight < 120;
-            final iconSize = compact ? 48.0 : 64.0;
-            final fontSize = compact ? 26.0 : 32.0;
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(def.icon, color: Colors.white, size: iconSize),
-                SizedBox(height: compact ? 6 : 10),
-                Text(
-                  def.label,
-                  style: GoogleFonts.notoSansKr(
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -1.0,
-                    height: 1.0,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+        child: banner ? _bannerContent() : _verticalContent(),
       ),
+    );
+  }
+
+  Widget _bannerContent() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Row(
+        children: [
+          Icon(def.icon, color: Colors.white, size: 64),
+          const SizedBox(width: 22),
+          Expanded(
+            child: Text(
+              def.label,
+              style: GoogleFonts.notoSansKr(
+                fontSize: 42,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -1.2,
+                height: 1.0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _verticalContent() {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final compact = c.maxHeight < 120;
+        final iconSize = compact ? 48.0 : 64.0;
+        final fontSize = compact ? 26.0 : 32.0;
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(def.icon, color: Colors.white, size: iconSize),
+            SizedBox(height: compact ? 6 : 10),
+            Text(
+              def.label,
+              style: GoogleFonts.notoSansKr(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -1.0,
+                height: 1.0,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
 class _MoreCard extends StatelessWidget {
+  final bool banner;
   final VoidCallback onTap;
-  const _MoreCard({required this.onTap});
+  const _MoreCard({this.banner = false, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -673,31 +705,59 @@ class _MoreCard extends StatelessWidget {
             ),
           ],
         ),
-        child: LayoutBuilder(
-          builder: (context, c) {
-            final compact = c.maxHeight < 120;
-            final iconSize = compact ? 44.0 : 56.0;
-            final fontSize = compact ? 24.0 : 28.0;
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.apps_rounded, color: _btnGrayInk, size: iconSize),
-                SizedBox(height: compact ? 6 : 10),
-                Text(
-                  '다른 화면 보기',
-                  style: GoogleFonts.notoSansKr(
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.w900,
-                    color: _btnGrayInk,
-                    letterSpacing: -0.8,
-                    height: 1.0,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+        child: banner ? _bannerContent() : _verticalContent(),
       ),
+    );
+  }
+
+  Widget _bannerContent() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Row(
+        children: [
+          const Icon(Icons.apps_rounded, color: _btnGrayInk, size: 56),
+          const SizedBox(width: 22),
+          Expanded(
+            child: Text(
+              '다른 화면 보기',
+              style: GoogleFonts.notoSansKr(
+                fontSize: 36,
+                fontWeight: FontWeight.w900,
+                color: _btnGrayInk,
+                letterSpacing: -1.0,
+                height: 1.0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _verticalContent() {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final compact = c.maxHeight < 120;
+        final iconSize = compact ? 44.0 : 56.0;
+        final fontSize = compact ? 24.0 : 28.0;
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.apps_rounded, color: _btnGrayInk, size: iconSize),
+            SizedBox(height: compact ? 6 : 10),
+            Text(
+              '다른 화면 보기',
+              style: GoogleFonts.notoSansKr(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w900,
+                color: _btnGrayInk,
+                letterSpacing: -0.8,
+                height: 1.0,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -85,6 +85,27 @@ class MainActivity : FlutterActivity() {
                         }
                     }
                     "getSdkInt" -> result.success(Build.VERSION.SDK_INT)
+                    "openHomeSettings" -> {
+                        // 사용자가 기본 런처를 다른 앱으로 바꿀 수 있도록 시스템 설정을 연다.
+                        val candidates = mutableListOf(Intent(Settings.ACTION_HOME_SETTINGS))
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            candidates.add(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+                        }
+                        candidates.add(Intent(Settings.ACTION_SETTINGS))
+                        var ok = false
+                        for (intent in candidates) {
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            try {
+                                startActivity(intent)
+                                ok = true
+                                break
+                            } catch (_: Exception) {
+                                // 다음 후보로
+                            }
+                        }
+                        if (ok) result.success(true)
+                        else result.error("HOME_SETTINGS_FAILED", "no settings intent worked", null)
+                    }
                     else -> result.notImplemented()
                 }
             }

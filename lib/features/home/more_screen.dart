@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/onboarding_setup_service.dart';
 import '../../services/realtime_service.dart';
 
 const _ink = Color(0xFF1A1A2E);
@@ -148,21 +148,51 @@ class MoreScreen extends ConsumerWidget {
   }
 
   Future<void> _onSwitchLauncher(BuildContext context) async {
-    final ok1 = await _confirm(
+    final ok = await _confirm(
       context,
-      '기본 홈 화면으로\n돌아가시겠어요?',
+      '원래 홈 화면으로\n돌아가시겠어요?',
     );
-    if (!ok1 || !context.mounted) return;
-    final ok2 = await _confirm(
-      context,
-      '정말로 돌아가시겠어요?\n잘보이네 앱은 그대로 있어요',
+    if (!ok || !context.mounted) return;
+    // 시스템 홈 설정을 열어 사용자가 직접 다른 런처를 고르도록 안내한다.
+    // SystemNavigator.pop() 은 잘보이네가 기본 런처일 때 다시 잘보이네로 돌아오는
+    // 무한 루프가 발생해서 사용 금지.
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        backgroundColor: Colors.white,
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            '곧 설정 화면이 열려요.\n원래 쓰시던 홈 앱을\n골라주세요',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.notoSansKr(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: _ink,
+              height: 1.35,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              '알겠어요',
+              style: GoogleFonts.notoSansKr(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: _medInk,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
-    if (!ok2 || !context.mounted) return;
-    // Android: 시스템이 기본 런처를 jalboine 으로 설정한 상태라면
-    // SystemNavigator.pop() 만으로는 원래 런처로 못 돌아갈 수 있다.
-    // 그래도 사용자가 '뒤로'/'홈'을 누르면 시스템 선택기가 뜨는 경우가 있어
-    // 가장 단순한 방식으로 종료를 시도한다.
-    SystemNavigator.pop();
+    if (!context.mounted) return;
+    await OnboardingSetupService.instance.openHomeSettings();
   }
 
   Future<bool> _confirm(BuildContext context, String text) async {

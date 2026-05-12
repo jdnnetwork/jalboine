@@ -47,4 +47,12 @@ class OnboardingSetupService {
       return 0;
     }
   }
+
+  /// 시스템 홈/기본 앱 설정을 연다.
+  /// 사용자가 잘보이네에서 다른 런처로 기본 런처를 바꾸려 할 때 사용.
+  Future<void> openHomeSettings() async {
+    try {
+      await _ch.invokeMethod('openHomeSettings');
+    } catch (_) {}
+  }
 }
