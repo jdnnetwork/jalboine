@@ -162,8 +162,9 @@ class _MedHourScreenState extends ConsumerState<MedHourScreen> {
   void _advanceOrComplete() {
     if (!mounted) return;
     if (_slotIndex + 1 >= widget.slots.length || widget.slots.isEmpty) {
+      final slotsParam = widget.slots.join(',');
       context.go(
-        '/med/confirm?count=${widget.count}&times=${_times.join(",")}',
+        '/med/confirm?count=${widget.count}&times=${_times.join(",")}&slots=$slotsParam',
       );
       return;
     }

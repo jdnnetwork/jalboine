@@ -111,6 +111,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               .split(',')
               .where((t) => t.isNotEmpty)
               .toList(),
+          slots: (s.uri.queryParameters['slots'] ?? '')
+              .split(',')
+              .where((t) => t.isNotEmpty)
+              .toList(),
         ),
       ),
       GoRoute(path: '/setup-done', builder: (_, _) => const SetupDoneScreen()),
