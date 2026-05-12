@@ -71,8 +71,6 @@ class _MedSlotScreenState extends ConsumerState<MedSlotScreen> {
 
   void _goNext() {
     if (!mounted) return;
-    // TODO(med-hour): 새 시간 선택 화면 구현 후 라우트 변경.
-    // 현재는 기존 hour 픽커로 이동 (slots 파라미터는 새 화면에서 사용 예정).
     final orderedSlots = [
       if (_selected.contains(_slotMorning)) _slotMorning,
       if (_selected.contains(_slotLunch)) _slotLunch,

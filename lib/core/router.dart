@@ -92,9 +92,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/med/hour',
-        builder: (_, s) => MedHourScreen(
-          count: int.tryParse(s.uri.queryParameters['count'] ?? '1') ?? 1,
-        ),
+        builder: (_, s) {
+          final count =
+              int.tryParse(s.uri.queryParameters['count'] ?? '1') ?? 1;
+          final slotsStr = s.uri.queryParameters['slots'] ?? '';
+          final slots = slotsStr
+              .split(',')
+              .where((x) => x.isNotEmpty)
+              .toList();
+          return MedHourScreen(count: count, slots: slots);
+        },
       ),
       GoRoute(
         path: '/med/confirm',
