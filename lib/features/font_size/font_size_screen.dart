@@ -7,7 +7,7 @@ import '../../services/audio_service.dart';
 import '../../services/onboarding_settings_service.dart';
 
 /// 글자 크기 설정 — 1단계 / 2단계 / 3단계 (최대) 내부 setState 로 전환.
-/// 1·2단계: "글자가 잘 보이시나요?" 네=현재 level 저장 후 /age,  아니요=다음 단계.
+/// 1·2단계: "글자가 잘 보이시나요?" 네=현재 level 저장 후 /age, 아니요=다음 단계.
 /// 3단계: "이 크기가 최대에요... 음성으로 안내?" 네=voice_guide=true, 아니요=false.
 class FontSizeScreen extends ConsumerStatefulWidget {
   final int level;
@@ -18,7 +18,7 @@ class FontSizeScreen extends ConsumerStatefulWidget {
 }
 
 class _FontSizeScreenState extends ConsumerState<FontSizeScreen> {
-  static const _bubbleText = Color(0xFF3E2723);
+  static const _bubbleText = Color(0xFF1A1A2E);
   static const _bubbleBorder = Color(0xFFFFD1DC);
   static const _accentRed = Color(0xFFFF2D6F);
   static const _accentRedLight = Color(0xFFFF5A8A);
@@ -35,16 +35,6 @@ class _FontSizeScreenState extends ConsumerState<FontSizeScreen> {
   String get _currentAsset => _isMax
       ? 'assets/audio/voice_ask.wav'
       : 'assets/audio/font_check.wav';
-
-  double get _bubbleFontSize => switch (_level) {
-        1 => 36,
-        _ => 44,
-      };
-
-  double get _buttonFontSize => switch (_level) {
-        1 => 36,
-        _ => 44,
-      };
 
   @override
   void initState() {
@@ -121,11 +111,9 @@ class _FontSizeScreenState extends ConsumerState<FontSizeScreen> {
   Future<void> _onToggleAudio() async {
     final guideOn = ref.read(audioGuideModeProvider);
     if (guideOn) {
-      // 끄기: 정지 + audio_guide_mode = false 저장
       await AudioService.instance.stop();
       await OnboardingSettingsService.setAudioGuide(ref, false);
     } else {
-      // 듣기: 현재 단계 음성 재생
       await AudioService.instance.play(_currentAsset);
     }
   }
@@ -133,80 +121,68 @@ class _FontSizeScreenState extends ConsumerState<FontSizeScreen> {
   @override
   Widget build(BuildContext context) {
     final guideOn = ref.watch(audioGuideModeProvider);
-    final bubbleText = _isMax
-        ? '이 크기가 최대에요. 대신 버튼을 누를 때마다 음성으로 안내해 드릴까요?'
-        : '글자가 잘 보이시나요?';
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
-              Center(
-                child: Image.asset(
-                  'assets/images/mascot.png',
-                  width: 100,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const _BubbleTail(
-                border: _bubbleBorder,
-                fill: Colors.white,
-              ),
-              _Bubble(
-                border: _bubbleBorder,
-                child: Text(
-                  bubbleText,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.notoSansKr(
-                    fontSize: _bubbleFontSize,
-                    fontWeight: FontWeight.w700,
-                    color: _bubbleText,
-                    height: 1.35,
-                    letterSpacing: -0.8,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              Row(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: LayoutBuilder(
+            builder: (context, c) {
+              final h = c.maxHeight;
+              final topH = h * 0.55;
+              final bottomH = h - topH;
+              return Column(
                 children: [
-                  Expanded(
-                    child: _GradientButton(
-                      label: '네',
-                      fontSize: _buttonFontSize,
-                      gradStart: _accentRed,
-                      gradEnd: _accentRedLight,
-                      fg: Colors.white,
-                      onTap: _onYes,
-                      enabled: !_busy,
+                  SizedBox(
+                    height: topH,
+                    child: _MascotBubble(
+                      level: _level,
+                      bubbleBorder: _bubbleBorder,
+                      bubbleText: _bubbleText,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _SolidButton(
-                      label: '아니요',
-                      fontSize: _buttonFontSize,
-                      bg: _noBg,
-                      fg: _noFg,
-                      onTap: _onNo,
-                      enabled: !_busy,
+                  SizedBox(
+                    height: bottomH,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _GradientButton(
+                                label: '네',
+                                gradStart: _accentRed,
+                                gradEnd: _accentRedLight,
+                                fg: Colors.white,
+                                onTap: _onYes,
+                                enabled: !_busy,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _SolidButton(
+                                label: '아니요',
+                                bg: _noBg,
+                                fg: _noFg,
+                                onTap: _onNo,
+                                enabled: !_busy,
+                              ),
+                            ),
+                          ],
+                        ),
+                        _AudioToggle(
+                          guideOn: guideOn,
+                          gradStart: _orangeStart,
+                          gradEnd: _orangeEnd,
+                          onTap: _onToggleAudio,
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 20),
-              _AudioToggle(
-                guideOn: guideOn,
-                gradStart: _orangeStart,
-                gradEnd: _orangeEnd,
-                onTap: _onToggleAudio,
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -214,38 +190,122 @@ class _FontSizeScreenState extends ConsumerState<FontSizeScreen> {
   }
 }
 
-class _Bubble extends StatelessWidget {
-  final Color border;
-  final Widget child;
-  const _Bubble({required this.border, required this.child});
+/// 마스코트가 말풍선 위로 걸치는 Stack 레이아웃.
+class _MascotBubble extends StatelessWidget {
+  final int level;
+  final Color bubbleBorder;
+  final Color bubbleText;
+  const _MascotBubble({
+    required this.level,
+    required this.bubbleBorder,
+    required this.bubbleText,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: border, width: 2),
-      ),
-      child: child,
+    return LayoutBuilder(
+      builder: (context, c) {
+        const mascotSize = 160.0;
+        const mascotOverlap = 50.0; // 말풍선 위로 걸치는 양
+        final bubbleW = c.maxWidth * 0.85;
+        final bubbleTop = mascotSize - mascotOverlap;
+        return Stack(
+          children: [
+            // 말풍선 (마스코트 아래에서 시작)
+            Positioned(
+              top: bubbleTop,
+              left: (c.maxWidth - bubbleW) / 2,
+              width: bubbleW,
+              child: Column(
+                children: [
+                  // 위 삼각형 꼬리
+                  CustomPaint(
+                    size: const Size(22, 12),
+                    painter: _TailPainter(
+                      border: bubbleBorder,
+                      fill: Colors.white,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: bubbleBorder, width: 2),
+                    ),
+                    child: _BubbleText(level: level, color: bubbleText),
+                  ),
+                ],
+              ),
+            ),
+            // 마스코트 (위에 걸침)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: mascotSize,
+              child: Center(
+                child: Image.asset(
+                  'assets/images/mascot.png',
+                  width: mascotSize,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
-class _BubbleTail extends StatelessWidget {
-  final Color border;
-  final Color fill;
-  const _BubbleTail({required this.border, required this.fill});
+class _BubbleText extends StatelessWidget {
+  final int level;
+  final Color color;
+  const _BubbleText({required this.level, required this.color});
+
+  TextStyle _t(double size) => GoogleFonts.notoSansKr(
+        fontSize: size,
+        fontWeight: FontWeight.w700,
+        color: color,
+        height: 1.25,
+        letterSpacing: -1.2,
+      );
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: CustomPaint(
-        size: const Size(20, 12),
-        painter: _TailPainter(border: border, fill: fill),
-      ),
+    if (level <= 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text('글자가', textAlign: TextAlign.center, style: _t(44)),
+          Text('잘 보이시나요?', textAlign: TextAlign.center, style: _t(44)),
+        ],
+      );
+    }
+    if (level == 2) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text('글자가', textAlign: TextAlign.center, style: _t(52)),
+          Text('잘 보이시나요?', textAlign: TextAlign.center, style: _t(52)),
+        ],
+      );
+    }
+    // level >= 3
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text('이 크기가 최대에요.',
+            textAlign: TextAlign.center, style: _t(52)),
+        const SizedBox(height: 8),
+        Text('버튼을 누를 때마다',
+            textAlign: TextAlign.center, style: _t(44)),
+        Text('음성으로 안내해',
+            textAlign: TextAlign.center, style: _t(44)),
+        Text('드릴까요?', textAlign: TextAlign.center, style: _t(44)),
+      ],
     );
   }
 }
@@ -268,7 +328,6 @@ class _TailPainter extends CustomPainter {
       ..close();
     canvas.drawPath(fillPath, Paint()..color = fill);
 
-    // 두 빗변만 그려서 말풍선 테두리와 자연스럽게 연결
     final stroke = Paint()
       ..color = border
       ..strokeWidth = 2
@@ -284,7 +343,6 @@ class _TailPainter extends CustomPainter {
 
 class _GradientButton extends StatelessWidget {
   final String label;
-  final double fontSize;
   final Color gradStart;
   final Color gradEnd;
   final Color fg;
@@ -292,7 +350,6 @@ class _GradientButton extends StatelessWidget {
   final bool enabled;
   const _GradientButton({
     required this.label,
-    required this.fontSize,
     required this.gradStart,
     required this.gradEnd,
     required this.fg,
@@ -306,7 +363,7 @@ class _GradientButton extends StatelessWidget {
       onTap: enabled ? onTap : null,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 100,
+        height: 120,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -326,10 +383,10 @@ class _GradientButton extends StatelessWidget {
         child: Text(
           label,
           style: GoogleFonts.notoSansKr(
-            fontSize: fontSize,
+            fontSize: 44,
             fontWeight: FontWeight.w800,
             color: fg,
-            letterSpacing: -1.0,
+            letterSpacing: -1.2,
           ),
         ),
       ),
@@ -339,14 +396,12 @@ class _GradientButton extends StatelessWidget {
 
 class _SolidButton extends StatelessWidget {
   final String label;
-  final double fontSize;
   final Color bg;
   final Color fg;
   final VoidCallback onTap;
   final bool enabled;
   const _SolidButton({
     required this.label,
-    required this.fontSize,
     required this.bg,
     required this.fg,
     required this.onTap,
@@ -359,7 +414,7 @@ class _SolidButton extends StatelessWidget {
       onTap: enabled ? onTap : null,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 100,
+        height: 120,
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(20),
@@ -368,10 +423,10 @@ class _SolidButton extends StatelessWidget {
         child: Text(
           label,
           style: GoogleFonts.notoSansKr(
-            fontSize: fontSize,
+            fontSize: 44,
             fontWeight: FontWeight.w800,
             color: fg,
-            letterSpacing: -1.0,
+            letterSpacing: -1.2,
           ),
         ),
       ),
@@ -399,6 +454,7 @@ class _AudioToggle extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
+        width: double.infinity,
         height: 70,
         decoration: BoxDecoration(
           gradient: LinearGradient(

@@ -116,10 +116,10 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
                 '연세가',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.notoSansKr(
-                  fontSize: 48,
+                  fontSize: 52,
                   fontWeight: FontWeight.w800,
                   color: _ink,
-                  letterSpacing: -1.6,
+                  letterSpacing: -1.8,
                   height: 1.1,
                 ),
               ),
@@ -127,10 +127,10 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
                 '어떻게 되시나요?',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.notoSansKr(
-                  fontSize: 48,
+                  fontSize: 52,
                   fontWeight: FontWeight.w800,
                   color: _ink,
-                  letterSpacing: -1.6,
+                  letterSpacing: -1.8,
                   height: 1.1,
                 ),
               ),
@@ -269,7 +269,7 @@ class _AgeButton extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        height: 80,
+        height: 85,
         decoration: BoxDecoration(
           color: group.bg,
           borderRadius: BorderRadius.circular(16),
@@ -292,10 +292,10 @@ class _AgeButton extends StatelessWidget {
               child: Text(
                 group.label,
                 style: GoogleFonts.notoSansKr(
-                  fontSize: 36,
+                  fontSize: 40,
                   fontWeight: FontWeight.w800,
                   color: group.fg,
-                  letterSpacing: -1.0,
+                  letterSpacing: -1.2,
                 ),
               ),
             ),

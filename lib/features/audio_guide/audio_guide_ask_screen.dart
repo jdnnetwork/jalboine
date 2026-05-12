@@ -77,12 +77,13 @@ class _AudioGuideAskScreenState extends ConsumerState<AudioGuideAskScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const SizedBox(height: 8),
               const _MascotBubble(
                 bubbleBorder: _bubbleBorder,
                 bubbleText: _bubbleText,
                 accent: _accentRed,
               ),
-              const Spacer(),
+              const Spacer(flex: 2),
               Column(
                 children: [
                   Text(
@@ -109,7 +110,7 @@ class _AudioGuideAskScreenState extends ConsumerState<AudioGuideAskScreen> {
                   ),
                 ],
               ),
-              const Spacer(),
+              const Spacer(flex: 3),
               if (_showHint)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
@@ -179,14 +180,13 @@ class _MascotBubble extends StatelessWidget {
       children: [
         Image.asset(
           'assets/images/mascot.png',
-          width: 80,
+          width: 90,
           fit: BoxFit.contain,
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -201,7 +201,7 @@ class _MascotBubble extends StatelessWidget {
                       TextSpan(
                         text: '어르신이 ',
                         style: GoogleFonts.notoSansKr(
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.w400,
                           color: bubbleText,
                           height: 1.45,
@@ -210,7 +210,7 @@ class _MascotBubble extends StatelessWidget {
                       TextSpan(
                         text: '쉽게',
                         style: GoogleFonts.notoSansKr(
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.w700,
                           color: accent,
                           height: 1.45,
@@ -219,7 +219,7 @@ class _MascotBubble extends StatelessWidget {
                       TextSpan(
                         text: ' 스마트폰을',
                         style: GoogleFonts.notoSansKr(
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.w400,
                           color: bubbleText,
                           height: 1.45,
@@ -231,7 +231,7 @@ class _MascotBubble extends StatelessWidget {
                 Text(
                   '사용할 수 있도록 도와드릴게요',
                   style: GoogleFonts.notoSansKr(
-                    fontSize: 20,
+                    fontSize: 22,
                     fontWeight: FontWeight.w400,
                     color: bubbleText,
                     height: 1.45,
@@ -240,7 +240,7 @@ class _MascotBubble extends StatelessWidget {
                 Text(
                   '차근 차근 따라오세요',
                   style: GoogleFonts.notoSansKr(
-                    fontSize: 20,
+                    fontSize: 22,
                     fontWeight: FontWeight.w400,
                     color: bubbleText,
                     height: 1.45,
@@ -277,7 +277,7 @@ class _GradientButton extends StatelessWidget {
       onTap: enabled ? onTap : null,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 100,
+        height: 120,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -297,10 +297,10 @@ class _GradientButton extends StatelessWidget {
         child: Text(
           label,
           style: GoogleFonts.notoSansKr(
-            fontSize: 40,
+            fontSize: 44,
             fontWeight: FontWeight.w800,
             color: fg,
-            letterSpacing: -1.0,
+            letterSpacing: -1.2,
           ),
         ),
       ),
@@ -328,7 +328,7 @@ class _SolidButton extends StatelessWidget {
       onTap: enabled ? onTap : null,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 100,
+        height: 120,
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(20),
@@ -337,10 +337,10 @@ class _SolidButton extends StatelessWidget {
         child: Text(
           label,
           style: GoogleFonts.notoSansKr(
-            fontSize: 40,
+            fontSize: 44,
             fontWeight: FontWeight.w800,
             color: fg,
-            letterSpacing: -1.0,
+            letterSpacing: -1.2,
           ),
         ),
       ),
