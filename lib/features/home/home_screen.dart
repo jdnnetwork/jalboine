@@ -100,6 +100,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   String? _primedKey;
   Timer? _callCheckTimer;
+  Timer? _clockTimer;
   bool _checkingCall = false;
   bool _alertOpen = false;
   List<String>? _cachedApps;
@@ -109,6 +110,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadCachedApps();
+    _clockTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (mounted) setState(() {});
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       StatusSyncService.instance.pushOnce();
       StatusSyncService.instance.startPeriodic();
@@ -138,6 +142,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _callCheckTimer?.cancel();
+    _clockTimer?.cancel();
     super.dispose();
   }
 
@@ -257,17 +262,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ));
   }
 
-  String get _greeting {
-    final h = DateTime.now().hour;
-    if (h < 11) return '좋은 아침이에요, 할머니';
-    if (h < 17) return '좋은 오후예요, 할머니';
-    return '편안한 저녁이에요, 할머니';
-  }
-
   String get _dateStr {
     final n = DateTime.now();
     const wd = ['월', '화', '수', '목', '금', '토', '일'];
     return '${n.year}년 ${n.month}월 ${n.day}일 ${wd[n.weekday - 1]}요일';
+  }
+
+  String get _timeStr {
+    final n = DateTime.now();
+    final ampm = n.hour < 12 ? '오전' : '오후';
+    final h = n.hour == 0 ? 12 : (n.hour > 12 ? n.hour - 12 : n.hour);
+    final m = n.minute.toString().padLeft(2, '0');
+    return '$ampm $h:$m';
   }
 
   @override
@@ -344,7 +350,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           children: [
             _Header(
               dateStr: _dateStr,
-              greeting: _greeting,
+              timeStr: _timeStr,
               mode: mode,
               onSoundTap: () async {
                 final next = mode.next;
@@ -380,12 +386,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
 class _Header extends StatelessWidget {
   final String dateStr;
-  final String greeting;
+  final String timeStr;
   final SoundMode mode;
   final VoidCallback onSoundTap;
   const _Header({
     required this.dateStr,
-    required this.greeting,
+    required this.timeStr,
     required this.mode,
     required this.onSoundTap,
   });
@@ -394,13 +400,14 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   dateStr,
                   style: GoogleFonts.notoSansKr(
                     fontSize: 18,
@@ -410,36 +417,21 @@ class _Header extends StatelessWidget {
                     height: 1.0,
                   ),
                 ),
-              ),
-              const Icon(Icons.wb_sunny_rounded,
-                  color: Color(0xFFFFB300), size: 24),
-              const SizedBox(width: 6),
-              Text(
-                // TODO(weather): 실제 날씨 API 연동 — 현재 하드코딩
-                '맑음 23°C',
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: _ink,
-                  letterSpacing: -0.4,
-                  height: 1.0,
+                const SizedBox(height: 6),
+                Text(
+                  timeStr,
+                  style: GoogleFonts.notoSansKr(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    color: _ink,
+                    letterSpacing: -1.0,
+                    height: 1.0,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              _SoundModeButton(mode: mode, onTap: onSoundTap),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            greeting,
-            style: GoogleFonts.notoSansKr(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              color: _ink,
-              letterSpacing: -1.2,
-              height: 1.1,
+              ],
             ),
           ),
+          _SoundModeButton(mode: mode, onTap: onSoundTap),
         ],
       ),
     );
