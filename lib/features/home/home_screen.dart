@@ -53,7 +53,7 @@ const _appDefs = <String, _AppDef>{
     audioAsset: 'assets/audio/phone.wav',
   ),
   'message': _AppDef(
-    label: '메시지',
+    label: '문자',
     icon: Icons.chat_bubble_rounded,
     startColor: Color(0xFF42A5F5),
     endColor: Color(0xFF1565C0),
@@ -67,7 +67,7 @@ const _appDefs = <String, _AppDef>{
     audioAsset: 'assets/audio/kakao.wav',
   ),
   'youtube': _AppDef(
-    label: '유튜브',
+    label: '영상 시청',
     icon: Icons.play_arrow_rounded,
     startColor: Color(0xFFEF5350),
     endColor: Color(0xFFC62828),
@@ -81,7 +81,7 @@ const _appDefs = <String, _AppDef>{
     audioAsset: 'assets/audio/camera.wav',
   ),
   'gallery': _AppDef(
-    label: '갤러리',
+    label: '사진 보기',
     icon: Icons.photo_library_rounded,
     startColor: Color(0xFFEC407A),
     endColor: Color(0xFFAD1457),
@@ -365,8 +365,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: _CardArea(
                 apps: apps,
                 primedKey: _primedKey,
+                partnerConnected: partnerConnected,
                 onAppTap: _onCardTap,
                 onMoreTap: () => context.push('/more'),
+                onFamilyTap: () => context.push('/family'),
               ),
             ),
             const SizedBox(height: 10),
@@ -441,13 +443,17 @@ class _Header extends StatelessWidget {
 class _CardArea extends StatelessWidget {
   final List<String> apps;
   final String? primedKey;
+  final bool partnerConnected;
   final void Function(String) onAppTap;
   final VoidCallback onMoreTap;
+  final VoidCallback onFamilyTap;
   const _CardArea({
     required this.apps,
     required this.primedKey,
+    required this.partnerConnected,
     required this.onAppTap,
     required this.onMoreTap,
+    required this.onFamilyTap,
   });
 
   @override
@@ -528,7 +534,12 @@ class _CardArea extends StatelessWidget {
               children: [
                 Expanded(child: _appCard(apps[4])),
                 const SizedBox(width: 12),
-                Expanded(child: _MoreCard(onTap: onMoreTap)),
+                Expanded(
+                  child: _FamilyCard(
+                    partnerConnected: partnerConnected,
+                    onTap: onFamilyTap,
+                  ),
+                ),
               ],
             ),
           ),
@@ -762,6 +773,84 @@ class _MoreCard extends StatelessWidget {
   }
 }
 
+class _FamilyCard extends StatelessWidget {
+  final bool partnerConnected;
+  final VoidCallback onTap;
+  const _FamilyCard({
+    required this.partnerConnected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFFF8FB1), Color(0xFFC2185B)],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFC2185B).withValues(alpha: 0.40),
+                  offset: const Offset(0, 6),
+                  blurRadius: 14,
+                ),
+              ],
+            ),
+            child: LayoutBuilder(
+              builder: (context, c) {
+                final compact = c.maxHeight < 120;
+                final iconSize = compact ? 44.0 : 60.0;
+                final fontSize = compact ? 22.0 : 28.0;
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.favorite,
+                        color: Colors.white, size: iconSize),
+                    SizedBox(height: compact ? 6 : 10),
+                    Text(
+                      '가족 연결하기',
+                      style: GoogleFonts.notoSansKr(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -0.8,
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          if (!partnerConnected)
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD32F2F),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 3),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _BottomArea extends StatelessWidget {
   final int count;
   final bool partnerConnected;
@@ -776,30 +865,37 @@ class _BottomArea extends StatelessWidget {
     required this.onSos,
   });
 
-  bool get _moreInGrid => count == 0 || count == 5;
+  bool get _moreInGrid => count == 0;
+  bool get _familyInGrid => count == 5;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        if (_moreInGrid)
-          _FamilyButton(
-            partnerConnected: partnerConnected,
-            onTap: onFamily,
-          )
-        else
-          Row(
-            children: [
-              Expanded(child: _MoreButton(onTap: onMore)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _FamilyButton(
-                  partnerConnected: partnerConnected,
-                  onTap: onFamily,
-                ),
-              ),
-            ],
+    final Widget middle;
+    if (_familyInGrid) {
+      middle = _MoreButton(onTap: onMore);
+    } else if (_moreInGrid) {
+      middle = _FamilyButton(
+        partnerConnected: partnerConnected,
+        onTap: onFamily,
+      );
+    } else {
+      middle = Row(
+        children: [
+          Expanded(child: _MoreButton(onTap: onMore)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _FamilyButton(
+              partnerConnected: partnerConnected,
+              onTap: onFamily,
+            ),
           ),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        middle,
         const SizedBox(height: 8),
         _SosButton(onTap: onSos),
       ],
