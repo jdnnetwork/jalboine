@@ -18,6 +18,7 @@ import '../features/onboarding/setup/battery_guide_screen.dart';
 import '../features/onboarding/setup/notification_guide_screen.dart';
 import '../features/medication_setup/med_has_screen.dart';
 import '../features/medication_setup/med_count_screen.dart';
+import '../features/medication_setup/med_slot_screen.dart';
 import '../features/medication_setup/med_hour_screen.dart';
 import '../features/medication_setup/med_confirm_screen.dart';
 import '../features/pairing/family_branch_screen.dart';
@@ -83,6 +84,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           builder: (_, _) => const NotificationGuideScreen()),
       GoRoute(path: '/med/has', builder: (_, _) => const MedHasScreen()),
       GoRoute(path: '/med/count', builder: (_, _) => const MedCountScreen()),
+      GoRoute(
+        path: '/med/slot',
+        builder: (_, s) => MedSlotScreen(
+          count: int.tryParse(s.uri.queryParameters['count'] ?? '1') ?? 1,
+        ),
+      ),
       GoRoute(
         path: '/med/hour',
         builder: (_, s) => MedHourScreen(

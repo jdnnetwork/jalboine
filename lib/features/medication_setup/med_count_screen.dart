@@ -33,7 +33,7 @@ class _MedCountScreenState extends ConsumerState<MedCountScreen> {
   }
 
   void _pick(int count) {
-    context.go('/med/hour?count=$count');
+    context.go('/med/slot?count=$count');
   }
 
   Future<void> _onToggleAudio() async {
