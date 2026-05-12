@@ -8,7 +8,6 @@ import '../features/audio_guide/audio_guide_ask_screen.dart';
 import '../features/font_size/font_size_screen.dart';
 import '../features/age/age_screen.dart';
 import '../features/auth/guardian_login_screen.dart';
-import '../features/setup_intro/setup_intro_screen.dart';
 import '../features/setup_intro/setup_done_screen.dart';
 import '../features/onboarding/onboarding_flow.dart';
 import '../features/terms/senior_terms_agreement_screen.dart';
@@ -56,9 +55,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/age', builder: (_, _) => const AgeScreen()),
-      GoRoute(
-          path: '/setup-intro',
-          builder: (_, _) => const SetupIntroScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingFlow()),
       GoRoute(
           path: '/onboarding/terms',

@@ -21,7 +21,7 @@ const _questions = <OnboardingQuestion>[
       '큰 글씨로 보여드릴게요', 'assets/audio/message_q.wav'),
   OnboardingQuestion('kakaotalk', '카카오톡을 쉽게 하고 싶으신가요?',
       '바로 켜드릴게요', 'assets/audio/kakao_q.wav'),
-  OnboardingQuestion('youtube', '동영상 시청을 자주 하시나요?',
+  OnboardingQuestion('youtube', '유튜브 동영상 시청을 자주 하시나요?',
       '한 번에 켜드릴게요', 'assets/audio/youtube_q.wav'),
   OnboardingQuestion('camera', '사진을 쉽게 찍고 싶으신가요?',
       '바로 찍기 버튼을 넣어드릴게요', 'assets/audio/camera_q.wav'),

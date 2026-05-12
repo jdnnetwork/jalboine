@@ -80,7 +80,7 @@ class _AgeScreenState extends ConsumerState<AgeScreen> {
       if (!mounted) return;
       await Future<void>.delayed(const Duration(milliseconds: 500));
       if (!mounted) return;
-      context.go('/setup-intro');
+      context.go('/onboarding');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));

@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../core/design_tokens.dart';
-import '../../core/theme.dart';
-import '../../widgets/audio_toggle_button.dart';
-import '../../widgets/back_pill.dart';
-import '../../widgets/big_button.dart';
-import '../../widgets/progress_dots.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../services/audio_service.dart';
+import '../../services/onboarding_settings_service.dart';
 
-class QuestionScreen extends ConsumerStatefulWidget {
+/// 앱 선택 6개 질문 공용 화면 — 마스코트 + 말풍선 + 네/아니요 + 음성 토글.
+class QuestionScreen extends ConsumerWidget {
   final String question;
-  final String subtitle;
+  final String subtitle; // 미사용 (호환을 위해 시그니처 유지)
   final String audioAsset;
   final int step;
   final int total;
@@ -27,134 +24,90 @@ class QuestionScreen extends ConsumerStatefulWidget {
     required this.onAnswer,
   });
 
-  @override
-  ConsumerState<QuestionScreen> createState() => _QuestionScreenState();
-}
-
-class _QuestionScreenState extends ConsumerState<QuestionScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _popCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _popCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 320),
-    )..forward();
-  }
-
-  @override
-  void didUpdateWidget(covariant QuestionScreen old) {
-    super.didUpdateWidget(old);
-    if (old.step != widget.step) {
-      _popCtrl.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _popCtrl.dispose();
-    super.dispose();
-  }
+  static const _ink = Color(0xFF1A1A2E);
+  static const _bubbleBorder = Color(0xFFFFD1DC);
+  static const _accentRed = Color(0xFFFF2D6F);
+  static const _accentRedLight = Color(0xFFFF5A8A);
+  static const _noBg = Color(0xFFF0F0F0);
+  static const _noFg = Color(0xFF2D2D2D);
 
   void _tap(bool yes) {
     HapticFeedback.lightImpact();
     SystemSound.play(SystemSoundType.click);
-    widget.onAnswer(yes);
+    onAnswer(yes);
+  }
+
+  Future<void> _onToggleAudio(WidgetRef ref) async {
+    final guideOn = ref.read(audioGuideModeProvider);
+    if (guideOn) {
+      await AudioService.instance.stop();
+      await OnboardingSettingsService.setAudioGuide(ref, false);
+    } else {
+      await AudioService.instance.play(audioAsset);
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final guideOn = ref.watch(audioGuideModeProvider);
     return Scaffold(
-      body: SeniorBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    BackPill(onTap: () => context.go('/')),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        '${widget.step + 1} / ${widget.total}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: JD.inkSoft,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 56),
-                  ],
-                ),
-                Expanded(
-                  child: Center(
-                    child: ScaleTransition(
-                      scale: Tween<double>(begin: 0.94, end: 1.0).animate(
-                        CurvedAnimation(
-                          parent: _popCtrl,
-                          curve: Curves.easeOutBack,
-                        ),
-                      ),
-                      child: FadeTransition(
-                        opacity: _popCtrl,
-                        child: _QuestionCard(
-                          number: widget.step + 1,
-                          question: widget.question,
-                          subtitle: widget.subtitle,
-                        ),
-                      ),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: LayoutBuilder(
+            builder: (context, c) {
+              final h = c.maxHeight;
+              final topH = h * 0.45;
+              final bottomH = h - topH;
+              return Column(
+                children: [
+                  SizedBox(
+                    height: topH,
+                    child: _MascotBubble(
+                      question: question,
+                      bubbleBorder: _bubbleBorder,
+                      ink: _ink,
                     ),
                   ),
-                ),
-                AudioToggleButton(audioAsset: widget.audioAsset),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: BigButton(
-                        label: '네',
-                        icon: Icons.check_rounded,
-                        background: JD.cMint,
-                        foreground: JD.ink,
-                        shadowBottomColor: const Color(0xFF3C965A),
-                        onTap: () => _tap(true),
-                        height: 96,
-                        fontSize: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: BigButton(
-                        label: '아니요',
-                        icon: Icons.close_rounded,
-                        background: Colors.white,
-                        foreground: JD.ink,
-                        shadowBottomColor: const Color(0xFFC8B89A),
-                        onTap: () => _tap(false),
-                        height: 96,
-                        fontSize: 28,
-                        border: Border.all(
-                          color: const Color(0xFFE8DDC9),
-                          width: 3,
+                  SizedBox(
+                    height: bottomH,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _AnswerButton(
+                                label: '네',
+                                gradStart: _accentRed,
+                                gradEnd: _accentRedLight,
+                                fg: Colors.white,
+                                onTap: () => _tap(true),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _AnswerButton(
+                                label: '아니요',
+                                bg: _noBg,
+                                fg: _noFg,
+                                onTap: () => _tap(false),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                        _AudioToggle(
+                          guideOn: guideOn,
+                          onTap: () => _onToggleAudio(ref),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                ProgressDots(total: widget.total, current: widget.step),
-                const SizedBox(height: 8),
-              ],
-            ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -162,83 +115,231 @@ class _QuestionScreenState extends ConsumerState<QuestionScreen>
   }
 }
 
-class _QuestionCard extends StatelessWidget {
-  final int number;
+/// 마스코트가 말풍선 위로 걸치는 Stack 레이아웃.
+class _MascotBubble extends StatelessWidget {
   final String question;
-  final String subtitle;
-  const _QuestionCard({
-    required this.number,
+  final Color bubbleBorder;
+  final Color ink;
+  const _MascotBubble({
     required this.question,
-    required this.subtitle,
+    required this.bubbleBorder,
+    required this.ink,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(28, 36, 28, 36),
-      decoration: BoxDecoration(
-        color: JD.cLavender,
-        borderRadius: BorderRadius.circular(JD.rCardLg),
-        boxShadow: [
-          BoxShadow(
-            color: JD.cPurple.withValues(alpha: 0.18),
-            offset: const Offset(0, 12),
-            blurRadius: 30,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 84,
-            height: 84,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: JD.cPurple.withValues(alpha: 0.20),
-                  offset: const Offset(0, 4),
-                  blurRadius: 0,
-                ),
-              ],
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              '$number',
-              style: const TextStyle(
-                fontSize: 44,
-                fontWeight: FontWeight.w900,
-                color: JD.cPurple,
+    return LayoutBuilder(
+      builder: (context, c) {
+        const mascotSize = 140.0;
+        const mascotOverlap = 40.0;
+        final bubbleW = c.maxWidth * 0.85;
+        final bubbleTop = mascotSize - mascotOverlap;
+        return Stack(
+          children: [
+            // 말풍선
+            Positioned(
+              top: bubbleTop,
+              left: (c.maxWidth - bubbleW) / 2,
+              width: bubbleW,
+              child: Column(
+                children: [
+                  CustomPaint(
+                    size: const Size(22, 12),
+                    painter: _TailPainter(
+                      border: bubbleBorder,
+                      fill: Colors.white,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: bubbleBorder, width: 2),
+                    ),
+                    child: Text(
+                      question,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.notoSansKr(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w800,
+                        color: ink,
+                        height: 1.25,
+                        letterSpacing: -1.2,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            question,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              color: JD.ink,
-              height: 1.25,
-              letterSpacing: -0.8,
-            ),
-          ),
-          if (subtitle.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: JD.inkSoft,
+            // 마스코트 (말풍선 위 걸침)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: mascotSize,
+              child: Center(
+                child: Image.asset(
+                  'assets/images/mascot.png',
+                  width: mascotSize,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ],
-        ],
+        );
+      },
+    );
+  }
+}
+
+class _TailPainter extends CustomPainter {
+  final Color border;
+  final Color fill;
+  _TailPainter({required this.border, required this.fill});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final apex = Offset(size.width / 2, 0);
+    final left = Offset(0, size.height);
+    final right = Offset(size.width, size.height);
+
+    final fillPath = Path()
+      ..moveTo(apex.dx, apex.dy)
+      ..lineTo(left.dx, left.dy)
+      ..lineTo(right.dx, right.dy)
+      ..close();
+    canvas.drawPath(fillPath, Paint()..color = fill);
+
+    final stroke = Paint()
+      ..color = border
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(apex, left, stroke);
+    canvas.drawLine(apex, right, stroke);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TailPainter old) =>
+      old.border != border || old.fill != fill;
+}
+
+/// 네/아니요 버튼: 위 큰 빈 원형 + 아래 텍스트
+class _AnswerButton extends StatelessWidget {
+  final String label;
+  final Color? gradStart;
+  final Color? gradEnd;
+  final Color? bg;
+  final Color fg;
+  final VoidCallback onTap;
+  const _AnswerButton({
+    required this.label,
+    required this.fg,
+    required this.onTap,
+    this.gradStart,
+    this.gradEnd,
+    this.bg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasGradient = gradStart != null && gradEnd != null;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 150,
+        decoration: BoxDecoration(
+          color: hasGradient ? null : bg,
+          gradient: hasGradient
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [gradStart!, gradEnd!],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: hasGradient
+              ? [
+                  BoxShadow(
+                    color: gradStart!.withValues(alpha: 0.30),
+                    offset: const Offset(0, 8),
+                    blurRadius: 18,
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: fg, width: 4),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                style: GoogleFonts.notoSansKr(
+                  fontSize: 44,
+                  fontWeight: FontWeight.w800,
+                  color: fg,
+                  letterSpacing: -1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 음성 안내 토글 — 흰 배경 + 검은 2px 테두리, 알약형
+class _AudioToggle extends StatelessWidget {
+  final bool guideOn;
+  final VoidCallback onTap;
+  const _AudioToggle({required this.guideOn, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = guideOn ? '음성 안내 끄기' : '음성 안내 듣기';
+    final icon = guideOn ? Icons.volume_off_rounded : Icons.volume_up_rounded;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: double.infinity,
+        height: 70,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF1A1A2E),
+            width: 2,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: const Color(0xFF1A1A2E), size: 30),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: GoogleFonts.notoSansKr(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1A1A2E),
+                letterSpacing: -0.6,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
