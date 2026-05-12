@@ -32,6 +32,13 @@ class MedSlotScreen extends ConsumerStatefulWidget {
 class _MedSlotScreenState extends ConsumerState<MedSlotScreen> {
   final Set<String> _selected = {};
   bool _advancing = false;
+  Timer? _advanceTimer;
+
+  @override
+  void dispose() {
+    _advanceTimer?.cancel();
+    super.dispose();
+  }
 
   String get _audioAsset =>
       widget.count == 1 ? 'assets/audio/when.wav' : 'assets/audio/when2.wav';
@@ -65,7 +72,8 @@ class _MedSlotScreenState extends ConsumerState<MedSlotScreen> {
     });
     if (_selected.length == widget.count) {
       _advancing = true;
-      Timer(const Duration(milliseconds: 500), _goNext);
+      _advanceTimer?.cancel();
+      _advanceTimer = Timer(const Duration(milliseconds: 500), _goNext);
     }
   }
 

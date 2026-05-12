@@ -11,6 +11,7 @@ import 'services/deep_link_service.dart';
 import 'services/fcm_service.dart';
 import 'services/foreground_sync_service.dart';
 import 'services/notification_service.dart';
+import 'services/onboarding_status.dart';
 import 'services/sound_mode_service.dart';
 import 'services/status_sync_service.dart';
 
@@ -25,6 +26,7 @@ Future<void> main() async {
       ]);
     });
     await _safeInit('supabase', initSupabase);
+    await _safeInit('onboarding_status', OnboardingStatus.load);
     await _safeInit('notification', NotificationService.instance.init);
     await _safeInit('deeplink', DeepLinkService.instance.init);
     await _safeInit(

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/supabase.dart';
 import '../../../services/audio_service.dart';
 import '../../../services/onboarding_settings_service.dart';
 import '../../../services/onboarding_setup_service.dart';
+import '../../../services/onboarding_status.dart';
 
 const _ink = Color(0xFF1A1A2E);
 const _accentPink = Color(0xFFFF6B8A);
@@ -117,9 +117,7 @@ class _LauncherGuideScreenState extends ConsumerState<LauncherGuideScreen>
   }
 
   Future<void> _saveFlags({required bool launcherSet}) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_complete', true);
-    await prefs.setBool('launcher_set', launcherSet);
+    await OnboardingStatus.save(launcherSet: launcherSet);
     try {
       final sb = ref.read(supabaseProvider);
       final uid = sb.auth.currentUser?.id;

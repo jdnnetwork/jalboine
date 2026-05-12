@@ -42,10 +42,13 @@ class _MedHasScreenState extends ConsumerState<MedHasScreen> {
     setState(() => _busy = true);
     try {
       final sb = ref.read(supabaseProvider);
-      final uid = sb.auth.currentUser!.id;
+      final user = sb.auth.currentUser;
+      if (user == null) {
+        throw StateError('세션이 만료됐어요. 다시 시작해주세요');
+      }
       await sb
           .from('senior_settings')
-          .upsert({'user_id': uid, 'takes_medication': yes});
+          .upsert({'user_id': user.id, 'takes_medication': yes});
       if (!mounted) return;
       if (yes) {
         context.go('/med/count');

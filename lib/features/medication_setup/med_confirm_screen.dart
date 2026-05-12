@@ -53,9 +53,14 @@ class _MedConfirmScreenState extends ConsumerState<MedConfirmScreen> {
 
   Future<void> _saveMedications({required bool alarmEnabled}) async {
     final sb = ref.read(supabaseProvider);
-    final uid = sb.auth.currentUser!.id;
+    final user = sb.auth.currentUser;
+    if (user == null) return;
+    final uid = user.id;
     final timesWithSec = widget.times.map((t) => '$t:00').toList();
-    await sb.from('medications').upsert({
+    // medications.user_id 에 unique 제약이 (오래된 DB 의 경우) 없을 수 있어
+    // upsert 가 매번 새 row 를 만든다. 안전하게 delete → insert.
+    await sb.from('medications').delete().eq('user_id', uid);
+    await sb.from('medications').insert({
       'user_id': uid,
       'frequency': widget.count,
       'times_per_day': widget.count,
@@ -95,6 +100,11 @@ class _MedConfirmScreenState extends ConsumerState<MedConfirmScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      setState(() {
+        _busy = false;
+        _declined = false;
+      });
+      return;
     }
     await Future<void>.delayed(const Duration(seconds: 2));
     if (!mounted) return;

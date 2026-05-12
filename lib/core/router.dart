@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'supabase.dart';
+import '../services/onboarding_status.dart';
 import '../features/start/start_screen.dart';
 import '../features/audio_guide/audio_guide_ask_screen.dart';
 import '../features/font_size/font_size_screen.dart';
@@ -46,6 +47,19 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     refreshListenable: GoRouterRefreshStream(sb.auth.onAuthStateChange),
+    redirect: (context, state) {
+      // 온보딩을 마친 익명(피보호자) 세션은 / 진입 시 곧장 /home 으로.
+      // 그렇지 않으면 앱이 기본 런처로 떠도 매번 StartScreen 으로 돌아가버린다.
+      if (state.matchedLocation == '/') {
+        final user = sb.auth.currentUser;
+        if (user != null &&
+            user.isAnonymous &&
+            OnboardingStatus.isComplete) {
+          return '/home';
+        }
+      }
+      return null;
+    },
     routes: [
       GoRoute(path: '/', builder: (_, _) => const StartScreen()),
       GoRoute(

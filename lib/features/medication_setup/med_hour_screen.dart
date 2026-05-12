@@ -102,6 +102,13 @@ class _MedHourScreenState extends ConsumerState<MedHourScreen> {
   int? _customHour;
   bool? _isPm;
   bool _busy = false;
+  Timer? _advanceTimer;
+
+  @override
+  void dispose() {
+    _advanceTimer?.cancel();
+    super.dispose();
+  }
 
   String get _currentSlotKey {
     if (widget.slots.isEmpty || _slotIndex >= widget.slots.length) {
@@ -130,7 +137,9 @@ class _MedHourScreenState extends ConsumerState<MedHourScreen> {
     final hh = hour24.toString().padLeft(2, '0');
     _times.add('$hh:00');
     _busy = true;
-    Timer(const Duration(milliseconds: 500), _advanceOrComplete);
+    _advanceTimer?.cancel();
+    _advanceTimer =
+        Timer(const Duration(milliseconds: 500), _advanceOrComplete);
   }
 
   void _onOtherTap() {
@@ -156,7 +165,9 @@ class _MedHourScreenState extends ConsumerState<MedHourScreen> {
     final hh = h24.toString().padLeft(2, '0');
     _times.add('$hh:00');
     _busy = true;
-    Timer(const Duration(milliseconds: 500), _advanceOrComplete);
+    _advanceTimer?.cancel();
+    _advanceTimer =
+        Timer(const Duration(milliseconds: 500), _advanceOrComplete);
   }
 
   void _advanceOrComplete() {
