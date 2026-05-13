@@ -52,7 +52,7 @@ final _familyConnectionsProvider =
         .from('pair_links')
         .select('guardian_user_id, guardian_nickname')
         .eq('senior_user_id', uid)
-        .eq('status', 'accepted');
+        .eq('status', 'confirmed');
     final list = <_FamilyConnection>[];
     for (final r in rows as List) {
       final m = r as Map<String, dynamic>;

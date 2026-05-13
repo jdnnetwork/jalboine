@@ -50,7 +50,7 @@ class _GuardianDashboardScreenState
         .from('pair_links')
         .select('senior_user_id')
         .eq('guardian_user_id', uid)
-        .eq('status', 'accepted')
+        .eq('status', 'confirmed')
         .order('created_at', ascending: false)
         .limit(1)
         .maybeSingle();

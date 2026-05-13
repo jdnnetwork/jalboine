@@ -55,7 +55,7 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
       final pairId = row['id'] as String;
       final seniorId = row['senior_user_id'] as String;
       // status 는 'pending' 그대로 두고 guardian_user_id 만 기록.
-      // 어르신이 동의 화면에서 좋아요/아니요 를 누르면 'accepted'/'rejected' 로 바뀐다.
+      // 어르신이 동의 화면에서 좋아요/아니요 를 누르면 'confirmed'/'rejected' 로 바뀐다.
       final updateData = <String, dynamic>{
         'guardian_user_id': uid,
       };
@@ -200,7 +200,7 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
       await sb.from('pair_links').insert({
         'senior_user_id': uid,
         'guardian_user_id': uid,
-        'status': 'accepted',
+        'status': 'confirmed',
       });
       if (!mounted) return;
       context.go('/guardian/dashboard');

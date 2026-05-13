@@ -39,7 +39,7 @@ class CallAlertsService {
           .from('pair_links')
           .select('guardian_user_id')
           .eq('senior_user_id', seniorId)
-          .eq('status', 'accepted')
+          .eq('status', 'confirmed')
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();

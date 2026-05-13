@@ -44,7 +44,7 @@ class _ConnectMethodScreenState extends ConsumerState<ConnectMethodScreen> {
           .from('pair_links')
           .select('id')
           .eq('guardian_user_id', uid)
-          .eq('status', 'accepted')
+          .eq('status', 'confirmed')
           .limit(1)
           .maybeSingle();
       if (!mounted) return;

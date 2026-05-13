@@ -44,7 +44,7 @@ class _FamilyBranchScreenState extends ConsumerState<FamilyBranchScreen> {
       final uid = sb.auth.currentUser!.id;
       await sb.from('pair_links').update({
         'senior_user_id': uid,
-        'status': 'accepted',
+        'status': 'confirmed',
       }).eq('invite_code', code);
       if (!mounted) return;
       context.go('/home');

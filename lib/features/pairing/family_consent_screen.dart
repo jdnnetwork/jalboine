@@ -43,7 +43,7 @@ class _FamilyConsentScreenState extends ConsumerState<FamilyConsentScreen> {
       }
       final row = await sb
           .from('pair_links')
-          .update({'status': 'accepted'})
+          .update({'status': 'confirmed'})
           .eq('id', widget.pairId)
           .select('guardian_user_id')
           .single();

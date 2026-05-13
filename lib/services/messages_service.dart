@@ -22,7 +22,7 @@ class MessagesService {
     final row = await sb
         .from('pair_links')
         .select('senior_user_id, guardian_user_id')
-        .eq('status', 'accepted')
+        .eq('status', 'confirmed')
         .or('senior_user_id.eq.$uid,guardian_user_id.eq.$uid')
         .order('created_at', ascending: false)
         .limit(1)
