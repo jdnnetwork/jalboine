@@ -1076,39 +1076,28 @@ class _FamilyBannerCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFFF8FB1), Color(0xFFC2185B)],
-          ),
+          color: _accentPink,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFC2185B).withValues(alpha: 0.40),
+              color: _accentPink.withValues(alpha: 0.40),
               offset: const Offset(0, 6),
               blurRadius: 14,
             ),
           ],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: Row(
-          children: [
-            const Icon(Icons.favorite, color: Colors.white, size: 64),
-            const SizedBox(width: 22),
-            Expanded(
-              child: Text(
-                nickname,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -1.2,
-                  height: 1.0,
-                ),
-              ),
-            ),
-          ],
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '❤️ $nickname',
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.notoSansKr(
+            fontSize: 40,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: -1.2,
+            height: 1.0,
+          ),
         ),
       ),
     );
@@ -1132,31 +1121,24 @@ class _FamilyBarCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFC2185B).withValues(alpha: 0.30),
+              color: _accentPink.withValues(alpha: 0.30),
               offset: const Offset(0, 5),
               blurRadius: 12,
             ),
           ],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          children: [
-            const Icon(Icons.favorite, color: Colors.white, size: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                nickname,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.notoSansKr(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -0.8,
-                  height: 1.0,
-                ),
-              ),
-            ),
-          ],
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '❤️ $nickname',
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.notoSansKr(
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: -0.8,
+            height: 1.0,
+          ),
         ),
       ),
     );
