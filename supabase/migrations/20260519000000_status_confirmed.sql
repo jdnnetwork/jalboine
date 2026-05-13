@@ -1,11 +1,13 @@
 -- pair_links.status: 'accepted' → 'confirmed' 으로 통일
 -- 코드 / RLS 정책 양쪽이 'confirmed' 를 사용하도록 변경.
 
--- 1) 기존 데이터 마이그레이션
+-- 1) CHECK 제약 먼저 제거 (없애야 'confirmed' 로 UPDATE 가능)
+alter table pair_links drop constraint if exists pair_links_status_check;
+
+-- 2) 기존 데이터 마이그레이션
 update pair_links set status = 'confirmed' where status = 'accepted';
 
--- 2) CHECK 제약 갱신
-alter table pair_links drop constraint if exists pair_links_status_check;
+-- 3) 새 CHECK 제약 추가
 alter table pair_links
   add constraint pair_links_status_check
   check (status in ('pending', 'confirmed', 'rejected'));
