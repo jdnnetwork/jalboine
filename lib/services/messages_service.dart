@@ -88,6 +88,30 @@ class MessagesService {
     return r.count;
   }
 
+  /// sender 와 receiver 를 잇는 confirmed pair_link 의 id 를 반환. 없으면 null.
+  Future<String?> _findPairLinkId({
+    required String userA,
+    required String userB,
+  }) async {
+    try {
+      final sb = supabaseClient;
+      final row = await sb
+          .from('pair_links')
+          .select('id')
+          .eq('status', 'confirmed')
+          .or(
+            'and(senior_user_id.eq.$userA,guardian_user_id.eq.$userB),'
+            'and(senior_user_id.eq.$userB,guardian_user_id.eq.$userA)',
+          )
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      return row?['id'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 텍스트 전송. 한도 초과 시 [LimitExceeded] throw.
   Future<void> sendText({
     required String receiverId,
@@ -99,10 +123,12 @@ class MessagesService {
     if (used >= monthlyTextLimit) {
       throw const LimitExceeded(isImage: false);
     }
+    final pairId = await _findPairLinkId(userA: uid, userB: receiverId);
     await sb.from('messages').insert({
       'sender_id': uid,
       'receiver_id': receiverId,
       'content': text,
+      'pair_link_id': ?pairId,
     });
     await _notifyMessageReceived(uid: uid, receiverId: receiverId);
   }
@@ -123,10 +149,12 @@ class MessagesService {
     final path = '$uid/$ts.$ext';
     await sb.storage.from(_bucket).upload(path, file);
     final url = sb.storage.from(_bucket).getPublicUrl(path);
+    final pairId = await _findPairLinkId(userA: uid, userB: receiverId);
     await sb.from('messages').insert({
       'sender_id': uid,
       'receiver_id': receiverId,
       'image_url': url,
+      'pair_link_id': ?pairId,
     });
     await _notifyMessageReceived(uid: uid, receiverId: receiverId);
   }
@@ -211,6 +239,32 @@ class LimitExceeded implements Exception {
 final partnerIdProvider = FutureProvider<String?>((ref) async {
   ref.watch(supabaseProvider); // auth 변경 시 재계산
   return MessagesService.instance.findPartnerId();
+});
+
+/// 특정 어르신의 표시 이름 (profiles.name → senior_settings.name → '어르신').
+/// 보호자 화면에서 헤더에 표시.
+final seniorNameProvider =
+    FutureProvider.family<String, String>((ref, seniorId) async {
+  final sb = supabaseClient;
+  try {
+    final row = await sb
+        .from('profiles')
+        .select('name')
+        .eq('user_id', seniorId)
+        .maybeSingle();
+    final n = (row?['name'] as String?)?.trim();
+    if (n != null && n.isNotEmpty) return n;
+  } catch (_) {}
+  try {
+    final row = await sb
+        .from('senior_settings')
+        .select('name')
+        .eq('user_id', seniorId)
+        .maybeSingle();
+    final n = (row?['name'] as String?)?.trim();
+    if (n != null && n.isNotEmpty) return n;
+  } catch (_) {}
+  return '어르신';
 });
 
 /// 현재 어르신과 연결된 보호자의 별명 (가장 최근 confirmed pair_link).
