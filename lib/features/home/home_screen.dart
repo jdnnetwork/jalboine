@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/design_tokens.dart';
+import '../../core/supabase.dart';
 import '../../services/audio_service.dart';
 import '../../services/foreground_sync_service.dart';
 import '../../services/launcher_service.dart';
@@ -118,7 +119,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       StatusSyncService.instance.startPeriodic();
       await OnboardingSettingsService.loadFromProfiles(ref);
       await ForegroundSyncService.instance.startIfNeeded();
+      await _checkPendingConsent();
     });
+  }
+
+  Future<void> _checkPendingConsent() async {
+    if (!mounted) return;
+    try {
+      final sb = ref.read(supabaseProvider);
+      final uid = sb.auth.currentUser?.id;
+      if (uid == null) return;
+      final row = await sb
+          .from('pair_links')
+          .select('id')
+          .eq('senior_user_id', uid)
+          .eq('status', 'pending')
+          .not('guardian_user_id', 'is', null)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      final pairId = row?['id'] as String?;
+      if (pairId == null || !mounted) return;
+      context.push('/family/consent?pair=$pairId');
+    } catch (_) {
+      // 네트워크/오류는 조용히 무시 — 동의 화면을 못 띄워도 홈은 정상 동작해야 함.
+    }
   }
 
   Future<void> _loadCachedApps() async {
@@ -153,6 +178,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       StatusSyncService.instance.pushOnce();
       StatusSyncService.instance.startPeriodic();
       _maybeStartCallChecker();
+      _checkPendingConsent();
     } else if (state == AppLifecycleState.paused) {
       StatusSyncService.instance.stop();
       _callCheckTimer?.cancel();

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
+import '../../services/push_service.dart';
 
 /// 보호자가 피보호자가 생성한 4자리 연결 코드를 입력하는 화면.
 class ParentConnectScreen extends ConsumerStatefulWidget {
@@ -50,11 +51,24 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
             const SnackBar(content: Text('번호가 맞지 않아요. 다시 확인해주세요')));
         return;
       }
+      final pairId = row['id'] as String;
+      final seniorId = row['senior_user_id'] as String;
+      // status 는 'pending' 그대로 두고 guardian_user_id 만 기록.
+      // 어르신이 동의 화면에서 좋아요/아니요 를 누르면 'accepted'/'rejected' 로 바뀐다.
       await sb.from('pair_links').update({
         'guardian_user_id': uid,
-        'status': 'accepted',
-      }).eq('id', row['id'] as String);
+      }).eq('id', pairId);
+      // 어르신에게 FCM 푸시 — 탭하면 동의 화면으로.
+      await PushService.instance.sendTo(
+        userId: seniorId,
+        title: '가족이 연결을 요청했어요',
+        body: '잘보이네를 열어 확인해 주세요',
+        data: {'route': '/family/consent?pair=$pairId'},
+      );
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('어르신께 알림을 보냈어요')),
+      );
       context.go('/guardian/dashboard');
     } catch (e) {
       if (!mounted) return;

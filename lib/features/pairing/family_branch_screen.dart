@@ -59,8 +59,9 @@ class _FamilyBranchScreenState extends ConsumerState<FamilyBranchScreen> {
   }
 
   String _gen() {
+    // 1000~9999 범위의 4자리 코드.
     final r = Random.secure();
-    return List.generate(6, (_) => r.nextInt(10).toString()).join();
+    return (1000 + r.nextInt(9000)).toString();
   }
 
   Future<void> _yes() async {
