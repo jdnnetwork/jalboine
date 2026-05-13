@@ -241,32 +241,6 @@ final partnerIdProvider = FutureProvider<String?>((ref) async {
   return MessagesService.instance.findPartnerId();
 });
 
-/// 특정 어르신의 표시 이름 (profiles.name → senior_settings.name → '어르신').
-/// 보호자 화면에서 헤더에 표시.
-final seniorNameProvider =
-    FutureProvider.family<String, String>((ref, seniorId) async {
-  final sb = supabaseClient;
-  try {
-    final row = await sb
-        .from('profiles')
-        .select('name')
-        .eq('user_id', seniorId)
-        .maybeSingle();
-    final n = (row?['name'] as String?)?.trim();
-    if (n != null && n.isNotEmpty) return n;
-  } catch (_) {}
-  try {
-    final row = await sb
-        .from('senior_settings')
-        .select('name')
-        .eq('user_id', seniorId)
-        .maybeSingle();
-    final n = (row?['name'] as String?)?.trim();
-    if (n != null && n.isNotEmpty) return n;
-  } catch (_) {}
-  return '어르신';
-});
-
 /// 현재 어르신과 연결된 보호자의 별명 (가장 최근 confirmed pair_link).
 final partnerNicknameProvider = FutureProvider<String?>((ref) async {
   final sb = supabaseClient;

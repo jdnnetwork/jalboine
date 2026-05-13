@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
-import '../../services/messages_service.dart';
 import '../messages/chat_view.dart';
 
 class GuardianMessagesScreen extends ConsumerWidget {
@@ -14,11 +13,6 @@ class GuardianMessagesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(currentUserProvider)?.id;
-    final nameAsync = ref.watch(seniorNameProvider(seniorId));
-    final name = nameAsync.maybeWhen(
-      data: (v) => v,
-      orElse: () => '어르신',
-    );
     return Theme(
       data: JTheme.guardian(),
       child: Scaffold(
@@ -35,16 +29,13 @@ class GuardianMessagesScreen extends ConsumerWidget {
                       icon: const Icon(Icons.arrow_back_rounded,
                           color: JD.gInk),
                     ),
-                    Expanded(
-                      child: Text(
-                        name,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: JD.gInk,
-                          letterSpacing: -0.4,
-                        ),
+                    const Text(
+                      '메시지',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: JD.gInk,
+                        letterSpacing: -0.4,
                       ),
                     ),
                   ],
