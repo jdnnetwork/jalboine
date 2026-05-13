@@ -9,7 +9,8 @@ import '../../services/push_service.dart';
 
 /// 보호자가 피보호자가 생성한 4자리 연결 코드를 입력하는 화면.
 class ParentConnectScreen extends ConsumerStatefulWidget {
-  const ParentConnectScreen({super.key});
+  final String nickname;
+  const ParentConnectScreen({super.key, this.nickname = ''});
 
   @override
   ConsumerState<ParentConnectScreen> createState() =>
@@ -55,9 +56,14 @@ class _ParentConnectScreenState extends ConsumerState<ParentConnectScreen> {
       final seniorId = row['senior_user_id'] as String;
       // status 는 'pending' 그대로 두고 guardian_user_id 만 기록.
       // 어르신이 동의 화면에서 좋아요/아니요 를 누르면 'accepted'/'rejected' 로 바뀐다.
-      await sb.from('pair_links').update({
+      final updateData = <String, dynamic>{
         'guardian_user_id': uid,
-      }).eq('id', pairId);
+      };
+      final nick = widget.nickname.trim();
+      if (nick.isNotEmpty) {
+        updateData['guardian_nickname'] = nick;
+      }
+      await sb.from('pair_links').update(updateData).eq('id', pairId);
       // 어르신에게 FCM 푸시 — 탭하면 동의 화면으로.
       await PushService.instance.sendTo(
         userId: seniorId,

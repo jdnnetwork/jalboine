@@ -40,6 +40,7 @@ import '../features/medication_alarm/med_alarm_screen.dart';
 import '../features/guardian_mode/guardian_pin_screen.dart';
 import '../features/guardian/parent_connect_screen.dart';
 import '../features/guardian/connect_method_screen.dart';
+import '../features/guardian/guardian_nickname_screen.dart';
 import '../features/guardian/guardian_dashboard_screen.dart';
 import '../features/guardian/guardian_messages_screen.dart';
 
@@ -218,8 +219,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/guardian/connect-method',
           builder: (_, _) => const ConnectMethodScreen()),
       GoRoute(
-          path: '/guardian/connect-code',
-          builder: (_, _) => const ParentConnectScreen()),
+          path: '/guardian/connect-nickname',
+          builder: (_, _) => const GuardianNicknameScreen()),
+      GoRoute(
+        path: '/guardian/connect-code',
+        builder: (_, s) => ParentConnectScreen(
+          nickname: s.uri.queryParameters['nickname'] ?? '',
+        ),
+      ),
       GoRoute(
           path: '/guardian/dashboard',
           builder: (_, _) => const GuardianDashboardScreen()),

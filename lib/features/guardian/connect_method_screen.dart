@@ -123,7 +123,8 @@ class _ConnectMethodScreenState extends ConsumerState<ConnectMethodScreen> {
                         icon: Icons.dialpad_rounded,
                         title: '부모님께 연결 번호 받기',
                         sub: '부모님이 알려주신 4자리 번호 입력',
-                        onTap: () => context.go('/guardian/connect-code'),
+                        onTap: () =>
+                            context.go('/guardian/connect-nickname'),
                       ),
                       const Spacer(),
                       // ===== DEV ONLY: 릴리즈 시 이 블록만 삭제 =====

@@ -30,6 +30,45 @@ const _btnPinkBg = Color(0xFFFFF0F0);
 
 const _kCachedAppsKey = 'cached_enabled_apps';
 
+class _FamilyConnection {
+  final String guardianId;
+  final String? nickname;
+  const _FamilyConnection({required this.guardianId, this.nickname});
+
+  String get displayName {
+    final n = nickname?.trim();
+    if (n == null || n.isEmpty) return '가족';
+    return n;
+  }
+}
+
+final _familyConnectionsProvider =
+    FutureProvider.autoDispose<List<_FamilyConnection>>((ref) async {
+  final sb = ref.watch(supabaseProvider);
+  final uid = sb.auth.currentUser?.id;
+  if (uid == null) return const <_FamilyConnection>[];
+  try {
+    final rows = await sb
+        .from('pair_links')
+        .select('guardian_user_id, guardian_nickname')
+        .eq('senior_user_id', uid)
+        .eq('status', 'accepted');
+    final list = <_FamilyConnection>[];
+    for (final r in rows as List) {
+      final m = r as Map<String, dynamic>;
+      final gid = m['guardian_user_id'] as String?;
+      if (gid == null) continue;
+      list.add(_FamilyConnection(
+        guardianId: gid,
+        nickname: m['guardian_nickname'] as String?,
+      ));
+    }
+    return list;
+  } catch (_) {
+    return const <_FamilyConnection>[];
+  }
+});
+
 class _AppDef {
   final String label;
   final IconData icon;
@@ -311,6 +350,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       data: (v) => v != null,
       orElse: () => false,
     );
+    final familiesAsync = ref.watch(_familyConnectionsProvider);
+    final families = familiesAsync.maybeWhen(
+      data: (v) => v,
+      orElse: () => const <_FamilyConnection>[],
+    );
 
     ref.listen(seniorSettingsProvider, (prev, next) {
       final prevOn = prev?.value?.unknownCallDetection ?? false;
@@ -349,14 +393,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: settings.when(
           loading: () => _cachedApps == null
               ? const Center(child: CircularProgressIndicator())
-              : _buildHome(effectiveApps, mode, partnerConnected),
+              : _buildHome(effectiveApps, mode, partnerConnected, families),
           error: (e, _) => Center(
             child: Text(
               '$e',
               style: GoogleFonts.notoSansKr(color: _inkSoft, fontSize: 16),
             ),
           ),
-          data: (_) => _buildHome(effectiveApps, mode, partnerConnected),
+          data: (_) =>
+              _buildHome(effectiveApps, mode, partnerConnected, families),
         ),
       ),
     );
@@ -366,6 +411,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     List<String> apps,
     SoundMode mode,
     bool partnerConnected,
+    List<_FamilyConnection> families,
   ) {
     return GestureDetector(
       onLongPress: () => context.push('/guardian/pin'),
@@ -390,17 +436,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             Expanded(
               child: _CardArea(
                 apps: apps,
+                families: families,
                 primedKey: _primedKey,
                 partnerConnected: partnerConnected,
                 onAppTap: _onCardTap,
                 onMoreTap: () => context.push('/more'),
                 onFamilyTap: () => context.push('/family'),
+                onFamilyMessageTap: () => context.push('/messages'),
               ),
             ),
             const SizedBox(height: 10),
             _BottomArea(
               count: apps.length,
               partnerConnected: partnerConnected,
+              hasFamily: families.isNotEmpty,
               onMore: () => context.push('/more'),
               onFamily: () => context.push('/family'),
               onSos: () => context.push('/emergency'),
@@ -468,23 +517,30 @@ class _Header extends StatelessWidget {
 
 class _CardArea extends StatelessWidget {
   final List<String> apps;
+  final List<_FamilyConnection> families;
   final String? primedKey;
   final bool partnerConnected;
   final void Function(String) onAppTap;
   final VoidCallback onMoreTap;
   final VoidCallback onFamilyTap;
+  final VoidCallback onFamilyMessageTap;
   const _CardArea({
     required this.apps,
+    required this.families,
     required this.primedKey,
     required this.partnerConnected,
     required this.onAppTap,
     required this.onMoreTap,
     required this.onFamilyTap,
+    required this.onFamilyMessageTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final n = apps.length;
+    if (families.isNotEmpty) {
+      return _buildWithFamilies(n);
+    }
     if (n == 0) {
       return _MoreCard(onTap: onMoreTap);
     }
@@ -616,6 +672,137 @@ class _CardArea extends StatelessWidget {
       primed: primedKey == key,
       banner: banner,
       onTap: () => onAppTap(key),
+    );
+  }
+
+  Widget _buildWithFamilies(int n) {
+    // n <= 3: 앱 + 가족 카드 모두 가로 배너로 세로 스택.
+    if (n <= 3) {
+      final items = <Widget>[];
+      for (var i = 0; i < n; i++) {
+        if (items.isNotEmpty) items.add(const SizedBox(height: 12));
+        items.add(Expanded(child: _appCard(apps[i], banner: true)));
+      }
+      for (final f in families) {
+        if (items.isNotEmpty) items.add(const SizedBox(height: 12));
+        items.add(Expanded(
+          child: _FamilyBannerCard(
+            nickname: f.displayName,
+            onTap: onFamilyMessageTap,
+          ),
+        ));
+      }
+      return Column(children: items);
+    }
+    // n >= 4: 앱 그리드 + 가족 64px 바를 그리드 아래로.
+    Widget grid;
+    if (n == 4) {
+      grid = Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[0])),
+                const SizedBox(width: 12),
+                Expanded(child: _appCard(apps[1])),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[2])),
+                const SizedBox(width: 12),
+                Expanded(child: _appCard(apps[3])),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else if (n == 5) {
+      // 5개일 때 6번째 슬롯은 MoreCard (가족은 그리드 아래로).
+      grid = Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[0])),
+                const SizedBox(width: 12),
+                Expanded(child: _appCard(apps[1])),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[2])),
+                const SizedBox(width: 12),
+                Expanded(child: _appCard(apps[3])),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[4])),
+                const SizedBox(width: 12),
+                Expanded(child: _MoreCard(onTap: onMoreTap)),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else {
+      // n == 6
+      grid = Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[0])),
+                const SizedBox(width: 12),
+                Expanded(child: _appCard(apps[1])),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[2])),
+                const SizedBox(width: 12),
+                Expanded(child: _appCard(apps[3])),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _appCard(apps[4])),
+                const SizedBox(width: 12),
+                Expanded(child: _appCard(apps[5])),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    return Column(
+      children: [
+        Expanded(child: grid),
+        const SizedBox(height: 12),
+        for (var i = 0; i < families.length; i++) ...[
+          _FamilyBarCard(
+            nickname: families[i].displayName,
+            onTap: onFamilyMessageTap,
+          ),
+          if (i < families.length - 1) const SizedBox(height: 8),
+        ],
+      ],
     );
   }
 }
@@ -877,53 +1064,168 @@ class _FamilyCard extends StatelessWidget {
   }
 }
 
+class _FamilyBannerCard extends StatelessWidget {
+  final String nickname;
+  final VoidCallback onTap;
+  const _FamilyBannerCard({required this.nickname, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFFF8FB1), Color(0xFFC2185B)],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFC2185B).withValues(alpha: 0.40),
+              offset: const Offset(0, 6),
+              blurRadius: 14,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Row(
+          children: [
+            const Icon(Icons.favorite, color: Colors.white, size: 64),
+            const SizedBox(width: 22),
+            Expanded(
+              child: Text(
+                nickname,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.notoSansKr(
+                  fontSize: 40,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -1.2,
+                  height: 1.0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FamilyBarCard extends StatelessWidget {
+  final String nickname;
+  final VoidCallback onTap;
+  const _FamilyBarCard({required this.nickname, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 64,
+        decoration: BoxDecoration(
+          color: _accentPink,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFC2185B).withValues(alpha: 0.30),
+              offset: const Offset(0, 5),
+              blurRadius: 12,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          children: [
+            const Icon(Icons.favorite, color: Colors.white, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                nickname,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.notoSansKr(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -0.8,
+                  height: 1.0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _BottomArea extends StatelessWidget {
   final int count;
   final bool partnerConnected;
+  final bool hasFamily;
   final VoidCallback onMore;
   final VoidCallback onFamily;
   final VoidCallback onSos;
   const _BottomArea({
     required this.count,
     required this.partnerConnected,
+    required this.hasFamily,
     required this.onMore,
     required this.onFamily,
     required this.onSos,
   });
 
-  bool get _moreInGrid => count == 0;
-  bool get _familyInGrid => count == 5;
-
   @override
   Widget build(BuildContext context) {
-    final Widget middle;
-    if (_familyInGrid) {
-      middle = _MoreButton(onTap: onMore);
-    } else if (_moreInGrid) {
-      middle = _FamilyButton(
-        partnerConnected: partnerConnected,
-        onTap: onFamily,
-      );
-    } else {
-      middle = Row(
-        children: [
-          Expanded(child: _MoreButton(onTap: onMore)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _FamilyButton(
-              partnerConnected: partnerConnected,
-              onTap: onFamily,
-            ),
-          ),
-        ],
-      );
-    }
+    final middle = _middle();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        middle,
-        const SizedBox(height: 8),
+        if (middle != null) ...[
+          middle,
+          const SizedBox(height: 8),
+        ],
         _SosButton(onTap: onSos),
+      ],
+    );
+  }
+
+  Widget? _middle() {
+    // 가족 연결 완료 상태 — 가족 버튼은 카드 영역으로 옮겨가서 하단에는 안 띄움.
+    if (hasFamily) {
+      if (count == 5) {
+        // count=5 에선 MoreCard 가 그리드 6번째 슬롯에 있음 → 하단 아무것도 없음.
+        return null;
+      }
+      // 다른 화면 보기 만 가로 전체.
+      return _MoreButton(onTap: onMore);
+    }
+    // 미연결 — 기존 로직.
+    if (count == 5) {
+      // 5개 케이스: FamilyCard(invite, 빨간 점) 가 그리드 6번째 → 하단엔 다른 화면 보기.
+      return _MoreButton(onTap: onMore);
+    }
+    if (count == 0) {
+      // 0개 케이스: MoreCard 가 단일 큰 카드로 그리드 차지 → 하단엔 가족 연결만.
+      return _FamilyButton(
+        partnerConnected: partnerConnected,
+        onTap: onFamily,
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: _MoreButton(onTap: onMore)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _FamilyButton(
+            partnerConnected: partnerConnected,
+            onTap: onFamily,
+          ),
+        ),
       ],
     );
   }
