@@ -5,6 +5,7 @@ class Message {
   final String? content;
   final String? imageUrl;
   final DateTime createdAt;
+  final bool isRead;
 
   const Message({
     required this.id,
@@ -13,6 +14,7 @@ class Message {
     required this.createdAt,
     this.content,
     this.imageUrl,
+    this.isRead = false,
   });
 
   factory Message.fromJson(Map<String, dynamic> j) => Message(
@@ -23,6 +25,7 @@ class Message {
         imageUrl: j['image_url'] as String?,
         createdAt:
             DateTime.parse(j['created_at'] as String).toLocal(),
+        isRead: (j['is_read'] as bool?) ?? false,
       );
 
   bool get isImage => imageUrl != null;

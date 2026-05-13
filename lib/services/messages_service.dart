@@ -131,6 +131,44 @@ class MessagesService {
     await _notifyMessageReceived(uid: uid, receiverId: receiverId);
   }
 
+  /// 특정 상대에게서 온 미읽 메시지를 모두 읽음 처리.
+  Future<void> markConversationAsRead(String partnerId) async {
+    try {
+      final sb = supabaseClient;
+      final uid = sb.auth.currentUser?.id;
+      if (uid == null) return;
+      await sb
+          .from('messages')
+          .update({'is_read': true})
+          .eq('sender_id', partnerId)
+          .eq('receiver_id', uid)
+          .eq('is_read', false);
+    } catch (_) {
+      // 읽음 처리 실패는 조용히 무시
+    }
+  }
+
+  /// 내가 받은 미읽 메시지를 실시간으로 watch. sender 별로 그룹핑한 결과.
+  /// `Map<senderId, List<Message>>`.
+  Stream<Map<String, List<Message>>> watchUnreadByPartner() {
+    final sb = supabaseClient;
+    final uid = sb.auth.currentUser?.id;
+    if (uid == null) return Stream.value(const {});
+    return sb.from('messages').stream(primaryKey: ['id']).map((rows) {
+      final out = <String, List<Message>>{};
+      for (final r in rows) {
+        final m = Message.fromJson(r);
+        if (m.receiverId != uid || m.isRead) continue;
+        out.putIfAbsent(m.senderId, () => []).add(m);
+      }
+      // 각 그룹을 시간순 정렬 (최신이 마지막)
+      for (final v in out.values) {
+        v.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      }
+      return out;
+    });
+  }
+
   /// 메시지 수신 푸시. sender role 에 따라 본문/route 다르게 보냄.
   Future<void> _notifyMessageReceived({
     required String uid,
@@ -173,6 +211,34 @@ class LimitExceeded implements Exception {
 final partnerIdProvider = FutureProvider<String?>((ref) async {
   ref.watch(supabaseProvider); // auth 변경 시 재계산
   return MessagesService.instance.findPartnerId();
+});
+
+/// 현재 어르신과 연결된 보호자의 별명 (가장 최근 confirmed pair_link).
+final partnerNicknameProvider = FutureProvider<String?>((ref) async {
+  final sb = supabaseClient;
+  final uid = sb.auth.currentUser?.id;
+  if (uid == null) return null;
+  try {
+    final row = await sb
+        .from('pair_links')
+        .select('guardian_nickname')
+        .eq('senior_user_id', uid)
+        .eq('status', 'confirmed')
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    final v = row?['guardian_nickname'] as String?;
+    return (v == null || v.trim().isEmpty) ? null : v.trim();
+  } catch (_) {
+    return null;
+  }
+});
+
+/// 내게 온 미읽 메시지를 senderId 별로 그룹핑한 실시간 스트림.
+/// 홈 화면에서 가족 카드 반짝임/팝업 트리거에 사용.
+final unreadByPartnerProvider =
+    StreamProvider<Map<String, List<Message>>>((ref) {
+  return MessagesService.instance.watchUnreadByPartner();
 });
 
 /// 두 사용자 간 대화 스트림.

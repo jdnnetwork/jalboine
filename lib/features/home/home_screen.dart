@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/design_tokens.dart';
 import '../../core/supabase.dart';
+import '../../models/message.dart';
 import '../../services/audio_service.dart';
 import '../../services/foreground_sync_service.dart';
 import '../../services/launcher_service.dart';
@@ -160,6 +161,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       await ForegroundSyncService.instance.startIfNeeded();
       await _checkPendingConsent();
     });
+  }
+
+  bool _unreadInitialized = false;
+  final Set<String> _seenMessageIds = <String>{};
+  bool _popupOpen = false;
+
+  void _onUnreadChanged(
+    AsyncValue<Map<String, List<Message>>>? prev,
+    AsyncValue<Map<String, List<Message>>> next,
+    List<_FamilyConnection> families,
+  ) {
+    final data = next.value;
+    if (data == null) return;
+    // 첫 emit 은 baseline 으로만 등록 (앱 시작 시 미읽이 있어도 팝업은 띄우지 않음).
+    if (!_unreadInitialized) {
+      for (final msgs in data.values) {
+        for (final m in msgs) {
+          _seenMessageIds.add(m.id);
+        }
+      }
+      _unreadInitialized = true;
+      return;
+    }
+    // 가장 최근에 처음 등장한 미읽 메시지 한 건만 팝업으로.
+    Message? newMsg;
+    for (final msgs in data.values) {
+      for (final m in msgs) {
+        if (!_seenMessageIds.contains(m.id)) {
+          _seenMessageIds.add(m.id);
+          if (newMsg == null || m.createdAt.isAfter(newMsg.createdAt)) {
+            newMsg = m;
+          }
+        }
+      }
+    }
+    if (newMsg == null || _popupOpen || !mounted) return;
+    final sender = families.firstWhere(
+      (f) => f.guardianId == newMsg!.senderId,
+      orElse: () => const _FamilyConnection(guardianId: '', nickname: null),
+    );
+    _showNewMessagePopup(sender.displayName);
+  }
+
+  Future<void> _showNewMessagePopup(String nickname) async {
+    _popupOpen = true;
+    final goMessages = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (_) => _NewMessagePopup(nickname: nickname),
+    );
+    _popupOpen = false;
+    if (!mounted) return;
+    if (goMessages == true) {
+      context.push('/messages');
+    }
   }
 
   Future<void> _checkPendingConsent() async {
@@ -355,6 +412,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       data: (v) => v,
       orElse: () => const <_FamilyConnection>[],
     );
+    final unreadAsync = ref.watch(unreadByPartnerProvider);
+    final unreadByPartner = unreadAsync.maybeWhen(
+      data: (v) => v,
+      orElse: () => const <String, List<Message>>{},
+    );
+    // ref.listen 으로 새 메시지 도착 시 팝업 띄우기 (한 번만).
+    ref.listen<AsyncValue<Map<String, List<Message>>>>(
+      unreadByPartnerProvider,
+      (prev, next) => _onUnreadChanged(prev, next, families),
+    );
 
     ref.listen(seniorSettingsProvider, (prev, next) {
       final prevOn = prev?.value?.unknownCallDetection ?? false;
@@ -393,7 +460,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: settings.when(
           loading: () => _cachedApps == null
               ? const Center(child: CircularProgressIndicator())
-              : _buildHome(effectiveApps, mode, partnerConnected, families),
+              : _buildHome(effectiveApps, mode, partnerConnected, families, unreadByPartner),
           error: (e, _) => Center(
             child: Text(
               '$e',
@@ -401,7 +468,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ),
           data: (_) =>
-              _buildHome(effectiveApps, mode, partnerConnected, families),
+              _buildHome(effectiveApps, mode, partnerConnected, families, unreadByPartner),
         ),
       ),
     );
@@ -412,6 +479,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     SoundMode mode,
     bool partnerConnected,
     List<_FamilyConnection> families,
+    Map<String, List<Message>> unreadByPartner,
   ) {
     return GestureDetector(
       onLongPress: () => context.push('/guardian/pin'),
@@ -437,6 +505,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: _CardArea(
                 apps: apps,
                 families: families,
+                unreadByPartner: unreadByPartner,
                 primedKey: _primedKey,
                 partnerConnected: partnerConnected,
                 onAppTap: _onCardTap,
@@ -518,6 +587,7 @@ class _Header extends StatelessWidget {
 class _CardArea extends StatelessWidget {
   final List<String> apps;
   final List<_FamilyConnection> families;
+  final Map<String, List<Message>> unreadByPartner;
   final String? primedKey;
   final bool partnerConnected;
   final void Function(String) onAppTap;
@@ -527,6 +597,7 @@ class _CardArea extends StatelessWidget {
   const _CardArea({
     required this.apps,
     required this.families,
+    required this.unreadByPartner,
     required this.primedKey,
     required this.partnerConnected,
     required this.onAppTap,
@@ -534,6 +605,9 @@ class _CardArea extends StatelessWidget {
     required this.onFamilyTap,
     required this.onFamilyMessageTap,
   });
+
+  bool _hasUnread(_FamilyConnection f) =>
+      (unreadByPartner[f.guardianId]?.isNotEmpty ?? false);
 
   @override
   Widget build(BuildContext context) {
@@ -688,6 +762,7 @@ class _CardArea extends StatelessWidget {
         items.add(Expanded(
           child: _FamilyBannerCard(
             nickname: f.displayName,
+            hasUnread: _hasUnread(f),
             onTap: onFamilyMessageTap,
           ),
         ));
@@ -798,6 +873,7 @@ class _CardArea extends StatelessWidget {
         for (var i = 0; i < families.length; i++) ...[
           _FamilyBarCard(
             nickname: families[i].displayName,
+            hasUnread: _hasUnread(families[i]),
             onTap: onFamilyMessageTap,
           ),
           if (i < families.length - 1) const SizedBox(height: 8),
@@ -1064,82 +1140,224 @@ class _FamilyCard extends StatelessWidget {
   }
 }
 
-class _FamilyBannerCard extends StatelessWidget {
+class _FamilyBannerCard extends StatefulWidget {
   final String nickname;
+  final bool hasUnread;
   final VoidCallback onTap;
-  const _FamilyBannerCard({required this.nickname, required this.onTap});
+  const _FamilyBannerCard({
+    required this.nickname,
+    required this.hasUnread,
+    required this.onTap,
+  });
+
+  @override
+  State<_FamilyBannerCard> createState() => _FamilyBannerCardState();
+}
+
+class _FamilyBannerCardState extends State<_FamilyBannerCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<Color?> _color;
+
+  static const _normal = _accentPink;
+  static const _bright = Color(0xFFFFB3C6);
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _color = ColorTween(begin: _normal, end: _bright).animate(_ctrl);
+    if (widget.hasUnread) _ctrl.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _FamilyBannerCard old) {
+    super.didUpdateWidget(old);
+    if (widget.hasUnread && !_ctrl.isAnimating) {
+      _ctrl.repeat(reverse: true);
+    } else if (!widget.hasUnread && _ctrl.isAnimating) {
+      _ctrl.stop();
+      _ctrl.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        decoration: BoxDecoration(
-          color: _accentPink,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: _accentPink.withValues(alpha: 0.40),
-              offset: const Offset(0, 6),
-              blurRadius: 14,
+      child: AnimatedBuilder(
+        animation: _color,
+        builder: (_, _) {
+          return Container(
+            decoration: BoxDecoration(
+              color: widget.hasUnread ? _color.value : _normal,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: _normal.withValues(alpha: 0.40),
+                  offset: const Offset(0, 6),
+                  blurRadius: 14,
+                ),
+              ],
             ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        alignment: Alignment.centerLeft,
-        child: Text(
-          '❤️ $nickname',
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.notoSansKr(
-            fontSize: 40,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-            letterSpacing: -1.2,
-            height: 1.0,
-          ),
-        ),
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '❤️ ${widget.nickname}',
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.notoSansKr(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -1.2,
+                    height: 1.0,
+                  ),
+                ),
+                if (widget.hasUnread) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '문자가 왔어요',
+                    style: GoogleFonts.notoSansKr(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                      letterSpacing: -0.4,
+                      height: 1.0,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-class _FamilyBarCard extends StatelessWidget {
+class _FamilyBarCard extends StatefulWidget {
   final String nickname;
+  final bool hasUnread;
   final VoidCallback onTap;
-  const _FamilyBarCard({required this.nickname, required this.onTap});
+  const _FamilyBarCard({
+    required this.nickname,
+    required this.hasUnread,
+    required this.onTap,
+  });
+
+  @override
+  State<_FamilyBarCard> createState() => _FamilyBarCardState();
+}
+
+class _FamilyBarCardState extends State<_FamilyBarCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<Color?> _color;
+
+  static const _normal = _accentPink;
+  static const _bright = Color(0xFFFFB3C6);
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _color = ColorTween(begin: _normal, end: _bright).animate(_ctrl);
+    if (widget.hasUnread) _ctrl.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _FamilyBarCard old) {
+    super.didUpdateWidget(old);
+    if (widget.hasUnread && !_ctrl.isAnimating) {
+      _ctrl.repeat(reverse: true);
+    } else if (!widget.hasUnread && _ctrl.isAnimating) {
+      _ctrl.stop();
+      _ctrl.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 64,
-        decoration: BoxDecoration(
-          color: _accentPink,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: _accentPink.withValues(alpha: 0.30),
-              offset: const Offset(0, 5),
-              blurRadius: 12,
+      child: AnimatedBuilder(
+        animation: _color,
+        builder: (_, _) {
+          return Container(
+            height: 64,
+            decoration: BoxDecoration(
+              color: widget.hasUnread ? _color.value : _normal,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: _normal.withValues(alpha: 0.30),
+                  offset: const Offset(0, 5),
+                  blurRadius: 12,
+                ),
+              ],
             ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        alignment: Alignment.centerLeft,
-        child: Text(
-          '❤️ $nickname',
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.notoSansKr(
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-            letterSpacing: -0.8,
-            height: 1.0,
-          ),
-        ),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '❤️ ${widget.nickname}',
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.notoSansKr(
+                          fontSize: widget.hasUnread ? 22 : 28,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: -0.8,
+                          height: 1.0,
+                        ),
+                      ),
+                      if (widget.hasUnread) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          '문자가 왔어요',
+                          style: GoogleFonts.notoSansKr(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                            letterSpacing: -0.3,
+                            height: 1.0,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -1419,6 +1637,108 @@ class _SoundModeButton extends StatelessWidget {
             boxShadow: JD.shadowCard,
           ),
           child: Icon(_icon, color: _ink, size: 24),
+        ),
+      ),
+    );
+  }
+}
+
+/// 새 메시지 도착 시 어르신 홈 위에 뜨는 전체 화면 오버레이.
+/// pop 시 true 면 메시지 화면으로 이동, false/null 이면 그냥 닫힘.
+class _NewMessagePopup extends StatelessWidget {
+  final String nickname;
+  const _NewMessagePopup({required this.nickname});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Image.asset(
+              'assets/images/mascot.png',
+              width: 100,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '$nickname에게\n메시지가 왔어요',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.notoSansKr(
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                color: _ink,
+                height: 1.3,
+                letterSpacing: -0.8,
+              ),
+            ),
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(true),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFFF2D6F), Color(0xFFFF5A8A)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF2D6F).withValues(alpha: 0.35),
+                      offset: const Offset(0, 6),
+                      blurRadius: 14,
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '확인하기',
+                  style: GoogleFonts.notoSansKr(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.8,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(false),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F0F0),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '닫기',
+                  style: GoogleFonts.notoSansKr(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF2D2D2D),
+                    letterSpacing: -0.6,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
